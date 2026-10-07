@@ -8,9 +8,21 @@ const parser = new Parser({
   },
 });
 
-// Universal Veto: immediate rejection of corporate PR, policy, labor, marketing, and HR
+// Universal Veto: immediate rejection of product GA announcements, changelogs, marketing, PR, events, and HR
 const UNIVERSAL_VETO_PATTERNS: RegExp[] = [
-  // Corporate PR, Deal Announcements & Real Estate
+  // 1. General Availability & Feature Rollout Announcements
+  /\b(now generally available|generally available( on| in| across)?|general availability|\bGA\b)\b/i,
+  /\b(now available( on| in| for| across)?|is now available|now in (preview|beta|early access))\b/i,
+  /\b(available on [a-zA-Z\s]*(gateway|marketplace|catalog|hub|cloud))\b/i,
+  /\b(introducing support for|added support for|now supported on|now live on)\b/i,
+  /\b[a-zA-Z0-9\s]+\s+[0-9]+\.[0-9]+\s+(is\s+)?now available\b/i,
+
+  // 2. Product / Feature Launch Announcements & Changelogs
+  /^(announcing|introducing|meet|welcome to|new in)\s+[\w\s]+(dashboard|console|ui|portal|pricing|gateway|tier|service|feature)\b/i,
+  /\b(what's new in|monthly roundup|weekly roundup|quarterly update|product update|changelog|release notes)\b/i,
+  /\b(this release (targets|introduces|brings|adds|fixes))\b/i,
+
+  // 3. Corporate PR, Deal Announcements & Real Estate
   /\b(partner(s|ed|ing)?\s+(with|for)|partnership with|join forces|teams? up with|teaming up with|\bx\s+[A-Z][a-zA-Z0-9]+)\b/i,
   /\b(opens?|opening|new)\s+([a-zA-Z\s]+)?(hub|office|headquarters|campus|center|centre)\b/i,
   /\b(commercial agreement|strategic alliance|enterprise agreement|sovereign enterprise)\b/i,
@@ -19,18 +31,20 @@ const UNIVERSAL_VETO_PATTERNS: RegExp[] = [
   /\b(earnings call|shareholder letter|quarterly results|financial results|fiscal year)\b/i,
   /\b(terms of service update|privacy policy update|brand refresh|new logo|rebrand)\b/i,
 
-  // Economic, Labor Market & Policy Studies (Think-tank and CSR reports)
+  // 4. Economic, Labor Market & Policy Studies (Think-tank & CSR reports)
   /\b(robot exposure index|physical job tasks|jobs? will robots do|predict the jobs)\b/i,
   /\b(labor market|workforce impact|future of work|job disruption|unemployment rate)\b/i,
   /\b(economic impact|gdp growth|macroeconomic|wages? impact)\b/i,
   /\b(societal impact|public policy paper|governance framework|regulatory response|amicus brief)\b/i,
   /\b(diversity report|sustainability report|carbon footprint|our pledge|our commitment)\b/i,
 
-  // Marketing, Promotional & Sales Case Studies
-  /^how\s+[\w\s]+\s+(is using|uses|scales with|transforms|reimagines)\s+/i,
+  // 5. Customer Marketing, Promotional & Sales Case Studies
+  /^how\s+[\w\s]+\s+(is using|uses|scales with|transforms|reimagines|chose|accelerates with)\s+/i,
   /\b(customer story|customer spotlight|customer success|client story|case study)\b/i,
   /\b(pricing change|price update|discount|black friday|cyber monday)\b/i,
-  /\b(webinar|conference recap|visit our booth|fireside chat|panel discussion|roundtable)\b/i,
+
+  // 6. Events, Conferences, Talks, Webinars & Podcasts
+  /\b(webinar|conference recap|visit our booth|fireside chat|panel discussion|roundtable|watch the recording|podcast episode)\b/i,
   /\b(share your story|tell us what you think|community survey|take the survey|feedback form)\b/i,
   /\b(named a leader in gartner|forrester wave|magic quadrant)\b/i,
   /\b(intern spotlight|life at\s+[A-Z]|meet the team|employee spotlight|we are hiring)\b/i,
@@ -266,7 +280,16 @@ export function isTechnicalEngineeringArticle(title: string, content: string = "
 
   // Reject empty, broken, or ultra-short summaries
   const cleanContent = (content || "").trim();
-  if (!cleanContent || cleanContent === "No content." || cleanContent.length < 35) {
+  if (!cleanContent || cleanContent === "No content." || cleanContent.length < 40) {
+    return false;
+  }
+
+  // Reject malformed HTML fragments or broken sentence starts
+  if (
+    /^(from is|is now|this release|\. [0-9]|on \. [0-9])/i.test(cleanContent) ||
+    /GoogleAI Gateway/i.test(cleanContent) ||
+    /\b(available on [a-zA-Z\s]*(gateway|marketplace|catalog))\b/i.test(cleanContent)
+  ) {
     return false;
   }
 
@@ -645,6 +668,17 @@ export function decodeHtmlEntities(text: string): string {
     .replace(/&hellip;/g, "…");
 }
 
+export function cleanTitle(title: string): string {
+  if (!title) return "";
+  let clean = decodeHtmlEntities(title).trim();
+  // Strip trailing site/company suffixes: e.g. " | ClickHouse", " - Vercel", " — Cloudflare Blog"
+  clean = clean.replace(
+    /\s*[|\-—–•]\s*(ClickHouse|Vercel|Stripe|Cloudflare|Netflix|OpenAI|Anthropic|GitHub|Slack|Uber|Canva|Meta|AWS|Discord|Tailscale|Fly\.io|Datadog|Supabase|TigerBeetle|CockroachDB|ScyllaDB|PlanetScale|DuckDB|Hugging Face|Mistral|Chrome Developers|web\.dev|React|Evil Martians|Google Research|The Cloudflare Blog|Engineering Blog|Engineering|Blog).*$/i,
+    ""
+  );
+  return clean.trim();
+}
+
 export function cleanHtmlSummary(htmlOrText: string = ""): string {
   if (!htmlOrText) return "";
 
@@ -715,7 +749,7 @@ export async function fetchAndParseFeed(
     const parsedItems: ParsedFeedItem[] = [];
 
     for (const item of feed.items) {
-      const title = (item.title || "").trim();
+      const title = cleanTitle(item.title || "");
       const link = (item.link || "").trim();
       if (!title || !link || !link.startsWith("http")) continue;
 
@@ -889,7 +923,7 @@ async function fetchCustomFeed(
             pageHtml.match(/<meta\s+property=["']og:description["']\s+content=["'](.*?)["']/i) ||
             pageHtml.match(/<meta\s+name=["']description["']\s+content=["'](.*?)["']/i);
 
-          const title = ogTitleMatch ? cleanHtmlSummary(ogTitleMatch[1]) : "";
+          const title = ogTitleMatch ? cleanTitle(ogTitleMatch[1]) : "";
           if (!title) return;
 
           const summary = ogDescMatch

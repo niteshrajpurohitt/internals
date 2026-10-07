@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase";
-import { fetchAndParseFeed, detectCategories, isMarketingFluff, decodeHtmlEntities } from "@/lib/rss";
+import { fetchAndParseFeed, detectCategories, isMarketingFluff, decodeHtmlEntities, cleanTitle } from "@/lib/rss";
 import { LANDMARK_POSTMORTEMS, LANDMARK_CLASSICS } from "@/lib/classics";
 
 export const maxDuration = 60; // Allow up to 60s for full feed sync
@@ -60,18 +60,18 @@ async function handleSync(req: NextRequest) {
       const batch = posts.slice(i, i + 40);
       await Promise.all(
         batch.map(async (p) => {
-          // If post fails technical verification (PR, policy, labor, marketing), purge it
-          if (isMarketingFluff(p.title, p.summary || "")) {
+          // Clean title and decode summary
+          const cleanedTitle = cleanTitle(p.title);
+          const decodedSummary = decodeHtmlEntities(p.summary || "");
+
+          // If post fails technical verification (PR, policy, labor, marketing, GA announcements), purge it
+          if (isMarketingFluff(cleanedTitle, decodedSummary) || isMarketingFluff(p.title, p.summary || "")) {
             await client.from("posts").delete().eq("id", p.id);
             deletedCount++;
             return;
           }
 
-          // Unescape any HTML entities in existing title or summary
-          const decodedTitle = decodeHtmlEntities(p.title);
-          const decodedSummary = decodeHtmlEntities(p.summary || "");
-
-          const newTags = detectCategories(decodedTitle, decodedSummary, p.tags || []);
+          const newTags = detectCategories(cleanedTitle, decodedSummary, p.tags || []);
           if (!newTags || newTags.length === 0) {
             await client.from("posts").delete().eq("id", p.id);
             deletedCount++;
@@ -82,14 +82,14 @@ async function handleSync(req: NextRequest) {
           const newSorted = newTags.slice().sort().join(",");
           const needsUpdate =
             currentSorted !== newSorted ||
-            p.title !== decodedTitle ||
+            p.title !== cleanedTitle ||
             p.summary !== decodedSummary;
 
           if (needsUpdate) {
             await client
               .from("posts")
               .update({
-                title: decodedTitle,
+                title: cleanedTitle,
                 summary: decodedSummary,
                 tags: newTags,
               })

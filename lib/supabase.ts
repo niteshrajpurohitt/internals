@@ -1,6 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
 import { Company, PostWithCompany } from "./types";
-import { MOCK_COMPANIES, MOCK_POSTS } from "./mock-data";
 
 function cleanSupabaseUrl(url?: string): string | null {
   if (!url) return null;
@@ -69,7 +68,7 @@ export function getServiceSupabase() {
 
 export async function getCompanies(): Promise<Company[]> {
   if (!supabase) {
-    return MOCK_COMPANIES;
+    return [];
   }
 
   try {
@@ -78,15 +77,15 @@ export async function getCompanies(): Promise<Company[]> {
       .select("*")
       .order("name", { ascending: true });
 
-    if (error || !data || data.length === 0) {
-      console.warn("Supabase query returned empty or failed, using mock data:", error?.message);
-      return MOCK_COMPANIES;
+    if (error || !data) {
+      console.warn("Supabase query returned empty or failed:", error?.message);
+      return [];
     }
 
     return data as Company[];
   } catch (err) {
-    console.warn("Supabase connection error, falling back to mock data:", err);
-    return MOCK_COMPANIES;
+    console.warn("Supabase connection error:", err);
+    return [];
   }
 }
 
@@ -230,23 +229,7 @@ export async function getPostCount(options?: PostQueryOptions): Promise<number> 
   const { companyId, category, searchQuery } = options || {};
 
   if (!supabase) {
-    let mock = MOCK_POSTS;
-    if (companyId && companyId !== "all") {
-      mock = mock.filter((p) => p.company_id === companyId || p.company?.id === companyId);
-    }
-    if (category && category !== "All") {
-      const variations = getCategoryTagVariations(category);
-      mock = mock.filter((p) =>
-        p.tags.some((t) => variations.some((v) => t.toLowerCase() === v.toLowerCase()))
-      );
-    }
-    if (searchQuery && searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      mock = mock.filter(
-        (p) => p.title.toLowerCase().includes(q) || p.summary.toLowerCase().includes(q)
-      );
-    }
-    return mock.length;
+    return 0;
   }
 
   try {
@@ -280,23 +263,7 @@ export async function getPosts(options?: PostQueryOptions): Promise<PostWithComp
   const { offset = 0, limit = 40, companyId, category, searchQuery } = options || {};
 
   if (!supabase) {
-    let mock = MOCK_POSTS;
-    if (companyId && companyId !== "all") {
-      mock = mock.filter((p) => p.company_id === companyId || p.company?.id === companyId);
-    }
-    if (category && category !== "All") {
-      const variations = getCategoryTagVariations(category);
-      mock = mock.filter((p) =>
-        p.tags.some((t) => variations.some((v) => t.toLowerCase() === v.toLowerCase()))
-      );
-    }
-    if (searchQuery && searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      mock = mock.filter(
-        (p) => p.title.toLowerCase().includes(q) || p.summary.toLowerCase().includes(q)
-      );
-    }
-    return mock.slice(offset, offset + limit);
+    return [];
   }
 
   try {

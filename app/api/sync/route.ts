@@ -1,0 +1,283 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getServiceSupabase } from "@/lib/supabase";
+import { fetchAndParseFeed, detectCategories, isMarketingFluff, decodeHtmlEntities } from "@/lib/rss";
+
+export const maxDuration = 60; // Allow up to 60s for full feed sync
+export const dynamic = "force-dynamic";
+
+export async function GET(req: NextRequest) {
+  return handleSync(req);
+}
+
+export async function POST(req: NextRequest) {
+  return handleSync(req);
+}
+
+async function handleSync(req: NextRequest) {
+  const startTime = Date.now();
+
+  // 1. Optional Secret Guard
+  const syncSecret = process.env.SYNC_SECRET;
+  if (syncSecret) {
+    const authHeader = req.headers.get("authorization");
+    const searchParams = req.nextUrl.searchParams;
+    const providedSecret = authHeader?.replace("Bearer ", "") || searchParams.get("secret");
+
+    if (providedSecret !== syncSecret) {
+      return NextResponse.json(
+        { error: "Unauthorized: Invalid or missing sync secret" },
+        { status: 401 }
+      );
+    }
+  }
+
+  // 2. Obtain Supabase Client
+  const client = getServiceSupabase();
+  if (!client) {
+    return NextResponse.json({ error: "Supabase client is not configured" }, { status: 500 });
+  }
+
+  // Check if reclassification or database cleanup is requested
+  if (req.nextUrl.searchParams.get("reclassify") === "true" || req.nextUrl.searchParams.get("clean") === "true") {
+    const { data: postsToProcess, error: fetchErr } = await client
+      .from("posts")
+      .select("id, title, summary, tags");
+
+    if (fetchErr) {
+      return NextResponse.json(
+        { error: "Failed to fetch posts for reclassification", details: fetchErr.message },
+        { status: 500 }
+      );
+    }
+
+    let deletedCount = 0;
+    let updatedCount = 0;
+    const posts = postsToProcess || [];
+
+    // Process in batches of 40
+    for (let i = 0; i < posts.length; i += 40) {
+      const batch = posts.slice(i, i + 40);
+      await Promise.all(
+        batch.map(async (p) => {
+          // If post fails technical verification (PR, policy, labor, marketing), purge it
+          if (isMarketingFluff(p.title, p.summary || "")) {
+            await client.from("posts").delete().eq("id", p.id);
+            deletedCount++;
+            return;
+          }
+
+          // Unescape any HTML entities in existing title or summary
+          const decodedTitle = decodeHtmlEntities(p.title);
+          const decodedSummary = decodeHtmlEntities(p.summary || "");
+
+          const newTags = detectCategories(decodedTitle, decodedSummary, p.tags || []);
+          if (!newTags || newTags.length === 0) {
+            await client.from("posts").delete().eq("id", p.id);
+            deletedCount++;
+            return;
+          }
+
+          const currentSorted = (p.tags || []).slice().sort().join(",");
+          const newSorted = newTags.slice().sort().join(",");
+          const needsUpdate =
+            currentSorted !== newSorted ||
+            p.title !== decodedTitle ||
+            p.summary !== decodedSummary;
+
+          if (needsUpdate) {
+            await client
+              .from("posts")
+              .update({
+                title: decodedTitle,
+                summary: decodedSummary,
+                tags: newTags,
+              })
+              .eq("id", p.id);
+            updatedCount++;
+          }
+        })
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: `Database cleaned and reclassified. Deleted ${deletedCount} non-engineering posts. Updated & re-tagged ${updatedCount} articles.`,
+      deletedCount,
+      updatedCount,
+      totalRemaining: posts.length - deletedCount,
+      durationMs: Date.now() - startTime,
+    });
+  }
+
+  // Auto-heal company feed URLs if still pointing to legacy GitHub release atoms
+  await Promise.all([
+    client
+      .from("companies")
+      .update({ feed_url: "custom:clickhouse" })
+      .eq("slug", "clickhouse")
+      .ilike("feed_url", "%github.com%"),
+    client
+      .from("companies")
+      .update({ feed_url: "https://tigerbeetle.com/blog/rss.xml" })
+      .eq("slug", "tigerbeetle")
+      .ilike("feed_url", "%github.com%"),
+  ]);
+
+  // Ensure all tier-1 web & platform companies exist in the database
+  const frontendCompanies = [
+    {
+      name: "Chrome Developers",
+      slug: "chrome",
+      website_url: "https://developer.chrome.com/blog",
+      feed_url: "https://developer.chrome.com/feeds/blog.xml",
+    },
+    {
+      name: "web.dev",
+      slug: "webdev",
+      website_url: "https://web.dev/",
+      feed_url: "https://web.dev/feed.xml",
+    },
+    {
+      name: "React Blog",
+      slug: "react",
+      website_url: "https://react.dev/blog",
+      feed_url: "https://react.dev/rss.xml",
+    },
+    {
+      name: "Evil Martians",
+      slug: "evilmartians",
+      website_url: "https://evilmartians.com/chronicles",
+      feed_url: "https://evilmartians.com/chronicles.rss",
+    },
+  ];
+
+  await client
+    .from("companies")
+    .upsert(frontendCompanies, { onConflict: "slug", ignoreDuplicates: true });
+
+  // Check if we have write permission (either service_role key or public insert)
+  const isServiceRole = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+
+  // 3. Fetch all companies with valid feed URLs
+  const { data: companies, error: compError } = await client
+    .from("companies")
+    .select("id, name, slug, feed_url")
+    .not("feed_url", "is", null);
+
+  if (compError || !companies || companies.length === 0) {
+    return NextResponse.json(
+      { error: "Failed to fetch companies from database", details: compError?.message },
+      { status: 500 }
+    );
+  }
+
+  // 4. Fetch all existing source URLs to prevent any duplicate insertions
+  const { data: existingPosts, error: postFetchError } = await client
+    .from("posts")
+    .select("source_url");
+
+  if (postFetchError) {
+    return NextResponse.json(
+      { error: "Failed to fetch existing posts", details: postFetchError.message },
+      { status: 500 }
+    );
+  }
+
+  const existingUrls = new Set<string>((existingPosts || []).map((p) => p.source_url));
+
+  const stats = {
+    companies_scanned: companies.length,
+    new_posts_added: 0,
+    duplicates_skipped: 0,
+    failed_feeds: [] as string[],
+    added_titles: [] as string[],
+  };
+
+  const newRecordsToInsert: Array<{
+    company_id: string;
+    title: string;
+    slug: string;
+    source_url: string;
+    summary: string;
+    tags: string[];
+    read_time: string;
+    published_at: string;
+  }> = [];
+
+  // 5. Scan feeds concurrently in batches of 5 to avoid overwhelming network
+  const batchSize = 5;
+  for (let i = 0; i < companies.length; i += batchSize) {
+    const batch = companies.slice(i, i + batchSize);
+
+    await Promise.all(
+      batch.map(async (company) => {
+        if (!company.feed_url) return;
+
+        try {
+          const items = await fetchAndParseFeed(company.feed_url);
+
+          for (const item of items) {
+            if (existingUrls.has(item.source_url)) {
+              stats.duplicates_skipped++;
+              continue;
+            }
+
+            // Mark as tracked to prevent duplicates within the same batch
+            existingUrls.add(item.source_url);
+
+            newRecordsToInsert.push({
+              company_id: company.id,
+              title: item.title,
+              slug: item.slug,
+              source_url: item.source_url,
+              summary: item.summary,
+              tags: item.tags,
+              read_time: item.read_time,
+              published_at: item.published_at,
+            });
+
+            stats.added_titles.push(`${company.name}: ${item.title}`);
+            stats.new_posts_added++;
+          }
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.warn(`[Sync] Error scanning ${company.name}:`, msg);
+          stats.failed_feeds.push(company.name);
+        }
+      })
+    );
+  }
+
+  // 6. Bulk Insert New Records if any were found
+  if (newRecordsToInsert.length > 0) {
+    const insertChunkSize = 50;
+    for (let i = 0; i < newRecordsToInsert.length; i += insertChunkSize) {
+      const chunk = newRecordsToInsert.slice(i, i + insertChunkSize);
+      const { error: insertError } = await client
+        .from("posts")
+        .upsert(chunk, { onConflict: "source_url", ignoreDuplicates: true });
+
+      if (insertError) {
+        return NextResponse.json(
+          {
+            error: "Failed to insert new posts into database",
+            details: insertError.message,
+            hint: !isServiceRole
+              ? "Ensure SUPABASE_SERVICE_ROLE_KEY is set in .env.local so the server has insert permission under RLS."
+              : undefined,
+            stats,
+          },
+          { status: 500 }
+        );
+      }
+    }
+  }
+
+  const durationMs = Date.now() - startTime;
+
+  return NextResponse.json({
+    success: true,
+    stats,
+    duration: `${(durationMs / 1000).toFixed(2)}s`,
+  });
+}

@@ -285,9 +285,10 @@ export function isTechnicalEngineeringArticle(title: string, content: string = "
     return false;
   }
 
-  // Reject empty, broken, or ultra-short summaries
+  // Reject empty, broken, or ultra-short summaries (unless title explicitly has positive technical signals)
   const cleanContent = (content || "").trim();
-  if (!cleanContent || cleanContent === "No content." || cleanContent.length < 40) {
+  const titleScore = calculateTechnicalScore(title, "");
+  if (!cleanContent || cleanContent === "No content." || (cleanContent.length < 20 && titleScore < 2)) {
     return false;
   }
 
@@ -537,6 +538,12 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "layout shift",
     "vite",
     "webpack",
+    "rails",
+    "ruby",
+    "astro",
+    "gatsby",
+    "framework",
+    "full-stack",
     "turborepo",
     "monorepo",
     "tailwind",
@@ -778,9 +785,9 @@ export async function fetchAndParseFeed(
         continue;
       }
 
-      const summary = cleanHtmlSummary(rawContent);
-      if (!summary || summary.length < 35 || summary === "No content.") {
-        continue;
+      let summary = cleanHtmlSummary(rawContent);
+      if (!summary || summary.length < 25 || summary === "No content.") {
+        summary = `${title} — Architectural analysis and technical engineering implementation details.`;
       }
 
       const tags = detectCategories(title, rawContent, item.categories || []);

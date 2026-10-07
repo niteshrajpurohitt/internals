@@ -364,27 +364,13 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
       </div>
 
       {/* Infinite Scroll Sentinel & Loading Indicator */}
-      <div ref={sentinelRef} className="flex flex-col items-center justify-center pt-6 pb-12">
+      <div ref={sentinelRef} className="flex flex-col items-center justify-center pt-8 pb-16">
         {isLoadingMore && (
-          <div className="flex items-center gap-2 rounded-full border border-white/[0.08] bg-zinc-900/90 px-4 py-2 font-mono text-xs text-zinc-400 shadow-xs backdrop-blur-sm">
-            <RefreshCw className="h-3.5 w-3.5 animate-spin text-emerald-400" />
-            <span>Loading more engineering articles...</span>
-          </div>
-        )}
-
-        {!hasMore && posts.length > 0 && !searchQuery && selectedCategory === "All" && selectedCompanyId === "all" && (
-          <p className="font-mono text-xs text-zinc-600">
-            • All {totalCount ? totalCount.toLocaleString() : posts.length} curated logs loaded •
-          </p>
-        )}
-
-        {hasMore && !isLoadingMore && (
-          <button
-            onClick={loadMorePosts}
-            className="cursor-pointer rounded-lg border border-white/[0.08] bg-zinc-900/60 px-4 py-2 font-mono text-xs text-zinc-400 transition-colors hover:border-white/[0.16] hover:bg-zinc-800 hover:text-zinc-200"
-          >
-            Load 30 more articles ↓
-          </button>
+          <div
+            className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-200"
+            role="status"
+            aria-label="Loading"
+          />
         )}
       </div>
     </div>

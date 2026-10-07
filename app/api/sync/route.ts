@@ -124,8 +124,24 @@ async function handleSync(req: NextRequest) {
     });
   }
 
-  // Auto-heal company feed URLs if still pointing to legacy GitHub release atoms
+  // Auto-heal company feed URLs with verified live endpoints
   await Promise.all([
+    client
+      .from("companies")
+      .update({ feed_url: "https://www.cockroachlabs.com/rss.xml" })
+      .eq("slug", "cockroachdb"),
+    client
+      .from("companies")
+      .update({ feed_url: "https://developer.chrome.com/static/blog/feed.xml" })
+      .eq("slug", "chrome"),
+    client
+      .from("companies")
+      .update({ feed_url: "https://canvatechblog.com/feed" })
+      .eq("slug", "canva"),
+    client
+      .from("companies")
+      .update({ feed_url: "https://evilmartians.com/chronicles.atom" })
+      .eq("slug", "evilmartians"),
     client
       .from("companies")
       .update({ feed_url: "custom:clickhouse" })
@@ -144,7 +160,7 @@ async function handleSync(req: NextRequest) {
       name: "Chrome Developers",
       slug: "chrome",
       website_url: "https://developer.chrome.com/blog",
-      feed_url: "https://developer.chrome.com/feeds/blog.xml",
+      feed_url: "https://developer.chrome.com/static/blog/feed.xml",
     },
     {
       name: "web.dev",
@@ -162,7 +178,7 @@ async function handleSync(req: NextRequest) {
       name: "Evil Martians",
       slug: "evilmartians",
       website_url: "https://evilmartians.com/chronicles",
-      feed_url: "https://evilmartians.com/chronicles.rss",
+      feed_url: "https://evilmartians.com/chronicles.atom",
     },
     {
       name: "Canva Engineering",
@@ -174,7 +190,7 @@ async function handleSync(req: NextRequest) {
       name: "CockroachDB",
       slug: "cockroachdb",
       website_url: "https://www.cockroachlabs.com/blog/",
-      feed_url: "https://www.cockroachlabs.com/blog/index.xml",
+      feed_url: "https://www.cockroachlabs.com/rss.xml",
     },
     {
       name: "Fastly",

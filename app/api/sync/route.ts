@@ -40,32 +40,46 @@ async function handleSync(req: NextRequest) {
 
   // Check if reclassification or database cleanup is requested
   if (req.nextUrl.searchParams.get("reclassify") === "true" || req.nextUrl.searchParams.get("clean") === "true") {
-    const { data: postsToProcess, error: fetchErr } = await client
-      .from("posts")
-      .select("id, title, summary, tags");
+    let allPosts: Array<{ id: string; title: string; summary: string; tags: string[] }> = [];
+    let page = 0;
+    const pageSize = 1000;
 
-    if (fetchErr) {
-      return NextResponse.json(
-        { error: "Failed to fetch posts for reclassification", details: fetchErr.message },
-        { status: 500 }
-      );
+    // Paginate through the entire database to overcome PostgREST 1000-row limit
+    while (true) {
+      const { data: chunk, error: fetchErr } = await client
+        .from("posts")
+        .select("id, title, summary, tags")
+        .range(page * pageSize, (page + 1) * pageSize - 1);
+
+      if (fetchErr) {
+        return NextResponse.json(
+          { error: "Failed to fetch posts for reclassification", details: fetchErr.message },
+          { status: 500 }
+        );
+      }
+
+      if (!chunk || chunk.length === 0) break;
+      allPosts = allPosts.concat(chunk);
+      if (chunk.length < pageSize) break;
+      page++;
     }
 
     let deletedCount = 0;
     let updatedCount = 0;
-    const posts = postsToProcess || [];
 
-    // Process in batches of 40
-    for (let i = 0; i < posts.length; i += 40) {
-      const batch = posts.slice(i, i + 40);
+    // Process in batches of 50
+    for (let i = 0; i < allPosts.length; i += 50) {
+      const batch = allPosts.slice(i, i + 50);
       await Promise.all(
         batch.map(async (p) => {
-          // Clean title and decode summary
           const cleanedTitle = cleanTitle(p.title);
           const decodedSummary = decodeHtmlEntities(p.summary || "");
 
-          // If post fails technical verification (PR, policy, labor, marketing, GA announcements), purge it
-          if (isMarketingFluff(cleanedTitle, decodedSummary) || isMarketingFluff(p.title, p.summary || "")) {
+          // Check against veto patterns and quality gates
+          if (
+            isMarketingFluff(cleanedTitle, decodedSummary) ||
+            isMarketingFluff(p.title, p.summary || "")
+          ) {
             await client.from("posts").delete().eq("id", p.id);
             deletedCount++;
             return;
@@ -102,10 +116,10 @@ async function handleSync(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Database cleaned and reclassified. Deleted ${deletedCount} non-engineering posts. Updated & re-tagged ${updatedCount} articles.`,
+      message: `Database cleaned and reclassified across all ${allPosts.length} posts. Deleted ${deletedCount} non-engineering posts. Updated & re-tagged ${updatedCount} articles.`,
       deletedCount,
       updatedCount,
-      totalRemaining: posts.length - deletedCount,
+      totalRemaining: allPosts.length - deletedCount,
       durationMs: Date.now() - startTime,
     });
   }
@@ -151,6 +165,30 @@ async function handleSync(req: NextRequest) {
       feed_url: "https://evilmartians.com/chronicles.rss",
     },
     {
+      name: "Canva Engineering",
+      slug: "canva",
+      website_url: "https://canvatechblog.com/",
+      feed_url: "https://canvatechblog.com/feed",
+    },
+    {
+      name: "CockroachDB",
+      slug: "cockroachdb",
+      website_url: "https://www.cockroachlabs.com/blog/",
+      feed_url: "https://www.cockroachlabs.com/blog/index.xml",
+    },
+    {
+      name: "Fastly",
+      slug: "fastly",
+      website_url: "https://www.fastly.com/blog",
+      feed_url: "https://www.fastly.com/blog/feed/",
+    },
+    {
+      name: "Mistral AI",
+      slug: "mistral",
+      website_url: "https://mistral.ai/news/",
+      feed_url: "custom:mistral",
+    },
+    {
       name: "CrowdStrike",
       slug: "crowdstrike",
       website_url: "https://www.crowdstrike.com/blog/",
@@ -167,6 +205,7 @@ async function handleSync(req: NextRequest) {
   await client
     .from("companies")
     .upsert(additionalCompanies, { onConflict: "slug", ignoreDuplicates: true });
+
 
   // Check if we have write permission (either service_role key or public insert)
   const isServiceRole = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);

@@ -22,21 +22,28 @@ const UNIVERSAL_VETO_PATTERNS: RegExp[] = [
   /\b(what's new in|monthly roundup|weekly roundup|quarterly update|product update|changelog|release notes)\b/i,
   /\b(this release (targets|introduces|brings|adds|fixes))\b/i,
 
-  // 3. Corporate PR, Deal Announcements & Real Estate
+  // 3. Corporate PR, Deal Announcements, Partnerships & Commercial Alliances
   /\b(partner(s|ed|ing)?\s+(with|for)|partnership with|join forces|teams? up with|teaming up with|\bx\s+[A-Z][a-zA-Z0-9]+)\b/i,
+  /\b(strategic partnership|content partnership|partner network|partner for your|commercial agreement|strategic alliance|enterprise agreement|sovereign enterprise)\b/i,
   /\b(opens?|opening|new)\s+([a-zA-Z\s]+)?(hub|office|headquarters|campus|center|centre)\b/i,
-  /\b(commercial agreement|strategic alliance|enterprise agreement|sovereign enterprise)\b/i,
   /\b(series\s+[a-f]|funding round|valuation|ipo|seed round|venture round|capital raised)\b/i,
   /\b(appointed as|joins as|executive team|welcoming our new|hires? as|c-suite)\b/i,
   /\b(earnings call|shareholder letter|quarterly results|financial results|fiscal year)\b/i,
   /\b(terms of service update|privacy policy update|brand refresh|new logo|rebrand)\b/i,
+  /\b(collaborate to (reimagine|transform|bring)|collaborator for (our|creative|sales|cfo))\b/i,
+  /\b(bring [a-zA-Z\s]+ to all citizens)\b/i,
 
-  // 4. Economic, Labor Market & Policy Studies (Think-tank & CSR reports)
+  // 4. Public Policy, Government, Lobbying & Regulatory Affairs
+  /\b(public policy|policy agenda|political advocacy|tech policy|industrial policy|government relations|national security partnerships?)\b/i,
+  /\b(tariffs? campaign|influence activity|regulatory framework|societal resilience|advocacy agenda|amicus brief)\b/i,
+  /\b(economic research exchange|funding grants?|grant program|fellowship program|teen development)\b/i,
+
+  // 5. Economic, Labor Market, Jobs & CSR Studies
   /\b(robot exposure index|physical job tasks|jobs? will robots do|predict the jobs)\b/i,
-  /\b(labor market|workforce impact|future of work|job disruption|unemployment rate)\b/i,
+  /\b(labor market|workforce impact|future of work|job disruption|jobs? transition|workforce transition|unemployment rate)\b/i,
   /\b(economic impact|gdp growth|macroeconomic|wages? impact)\b/i,
-  /\b(societal impact|public policy paper|governance framework|regulatory response|amicus brief)\b/i,
   /\b(diversity report|sustainability report|carbon footprint|our pledge|our commitment)\b/i,
+  /\b(can ai help us collaborate|collaborate on user sessions|session replay)\b/i,
 
   // 5. Customer Marketing, Promotional & Sales Case Studies
   /^how\s+[\w\s]+\s+(is using|uses|scales with|transforms|reimagines|chose|accelerates with)\s+/i,
@@ -758,7 +765,13 @@ export async function fetchAndParseFeed(
         continue;
       }
 
-      const rawContent = item.contentSnippet || item.content || item.summary || "";
+      const rawContent =
+        item.contentSnippet ||
+        item.content ||
+        item.summary ||
+        (item as Record<string, unknown>).description?.toString() ||
+        (item as Record<string, unknown>)["content:encoded"]?.toString() ||
+        "";
 
       // Quality filter: discard PR, broken summaries, or non-technical content
       if (isMarketingFluff(title, rawContent)) {

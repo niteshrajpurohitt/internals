@@ -259,6 +259,51 @@ export async function getPostCount(options?: PostQueryOptions): Promise<number> 
   }
 }
 
+/**
+ * Fair Feed Interleaving: Prevents any single high-volume blog (e.g. OpenAI, Vercel)
+ * from dominating consecutive cards on the general feed while preserving recency.
+ */
+export function interleavePostsByCompany(
+  posts: PostWithCompany[],
+  maxConsecutive: number = 2
+): PostWithCompany[] {
+  if (posts.length <= maxConsecutive) return posts;
+
+  const result: PostWithCompany[] = [];
+  const deferred: PostWithCompany[] = [];
+
+  for (const post of posts) {
+    const compId = post.company_id;
+    const len = result.length;
+    let consecutiveCount = 0;
+
+    for (let i = len - 1; i >= 0 && i >= len - maxConsecutive; i--) {
+      if (result[i].company_id === compId) {
+        consecutiveCount++;
+      } else {
+        break;
+      }
+    }
+
+    if (consecutiveCount >= maxConsecutive) {
+      deferred.push(post);
+    } else {
+      result.push(post);
+      // Re-inject a deferred post from an alternate company if available
+      if (deferred.length > 0) {
+        const altIndex = deferred.findIndex((d) => d.company_id !== compId);
+        if (altIndex !== -1) {
+          result.push(deferred.splice(altIndex, 1)[0]);
+        }
+      }
+    }
+  }
+
+  // Append any remaining deferred items
+  result.push(...deferred);
+  return result;
+}
+
 export async function getPosts(options?: PostQueryOptions): Promise<PostWithCompany[]> {
   const { offset = 0, limit = 40, companyId, category, searchQuery } = options || {};
 
@@ -298,7 +343,10 @@ export async function getPosts(options?: PostQueryOptions): Promise<PostWithComp
       }
     }
 
-    query = query.range(offset, offset + limit - 1);
+    const isGeneralFeed = (!companyId || companyId === "all") && !searchQuery;
+    const fetchLimit = isGeneralFeed ? Math.min(limit * 2, 120) : limit;
+
+    query = query.range(offset, offset + fetchLimit - 1);
 
     const { data, error } = await query;
 
@@ -308,10 +356,17 @@ export async function getPosts(options?: PostQueryOptions): Promise<PostWithComp
     }
 
     // Normalize company property
-    return data.map((post: PostWithCompany) => ({
+    const normalized = data.map((post: PostWithCompany) => ({
       ...post,
       company: post.companies || null,
     })) as PostWithCompany[];
+
+    if (isGeneralFeed) {
+      const interleaved = interleavePostsByCompany(normalized, 2);
+      return interleaved.slice(0, limit);
+    }
+
+    return normalized.slice(0, limit);
   } catch (err) {
     console.warn("Supabase connection error:", err);
     return [];

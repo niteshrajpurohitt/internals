@@ -16,6 +16,7 @@ interface FeedProps {
 const CATEGORIES: CategoryFilter[] = [
   "All",
   "Classics",
+  "Postmortems",
   "AI & Machine Learning",
   "Distributed Systems",
   "Databases & Storage",

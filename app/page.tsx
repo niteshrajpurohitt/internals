@@ -26,7 +26,7 @@ export default async function HomePage() {
           {/* Crisp Subtitle */}
           <p className="max-w-2xl text-sm leading-relaxed font-normal text-zinc-400 sm:text-base">
             Curated architectural deep dives from tier-1 engineering teams. Distributed systems, LLM
-            infrastructure, compiler internals, and edge networks. System one architecture.
+            infrastructure, compiler internals, and edge networks.
           </p>
 
           {/* Quick Technical Specs Metrics Bar */}

@@ -210,6 +210,17 @@ export function getCategoryTagVariations(category: string): string[] {
       ];
     case "Classics":
       return ["Classics", "★ Classics", "Classic"];
+    case "Postmortems":
+      return [
+        "Postmortems",
+        "Postmortem",
+        "Outage Analysis",
+        "Incident Review",
+        "RCA",
+        "Disruption",
+        "Root Cause Analysis",
+        "Incident Report",
+      ];
     default:
       return [category];
   }

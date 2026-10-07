@@ -545,9 +545,21 @@ export function detectCategories(
   const combined = `${title} ${summary} ${existingTags.join(" ")}`;
   const detectedTags = new Set<string>();
 
-  // Preserve 'Classics' tag if already marked or in existing tags
+  // Preserve 'Classics' and 'Postmortems' tags if in existing tags
   if (existingTags.some((t) => t.toLowerCase() === "classics")) {
     detectedTags.add("Classics");
+  }
+  if (existingTags.some((t) => t.toLowerCase() === "postmortems" || t.toLowerCase() === "postmortem")) {
+    detectedTags.add("Postmortems");
+  }
+
+  // Auto-detect production postmortems & incident analyses
+  if (
+    /\b(postmortem|outage\s+analysis|root\s+cause\s+analysis|\brca\b|incident\s+report|incident\s+review|service\s+disruption|post-mortem)\b/i.test(
+      `${title} ${summary}`
+    )
+  ) {
+    detectedTags.add("Postmortems");
   }
 
   // Score match count per category using strict word-boundary matching
@@ -686,9 +698,12 @@ export interface ParsedFeedItem {
   slug: string;
 }
 
-export async function fetchAndParseFeed(feedUrl: string): Promise<ParsedFeedItem[]> {
+export async function fetchAndParseFeed(
+  feedUrl: string,
+  existingUrls?: Set<string>
+): Promise<ParsedFeedItem[]> {
   if (feedUrl.startsWith("custom:")) {
-    return fetchCustomFeed(feedUrl);
+    return fetchCustomFeed(feedUrl, existingUrls);
   }
 
   try {
@@ -703,6 +718,11 @@ export async function fetchAndParseFeed(feedUrl: string): Promise<ParsedFeedItem
       const title = (item.title || "").trim();
       const link = (item.link || "").trim();
       if (!title || !link || !link.startsWith("http")) continue;
+
+      // Fast 0ms skip: if already saved in database, don't do any processing
+      if (existingUrls && existingUrls.has(link)) {
+        continue;
+      }
 
       const rawContent = item.contentSnippet || item.content || item.summary || "";
 
@@ -749,7 +769,10 @@ export async function fetchAndParseFeed(feedUrl: string): Promise<ParsedFeedItem
 }
 
 // Lightweight, legal Open Graph crawler for sites without native RSS feeds
-async function fetchCustomFeed(customUrl: string): Promise<ParsedFeedItem[]> {
+async function fetchCustomFeed(
+  customUrl: string,
+  existingUrls?: Set<string>
+): Promise<ParsedFeedItem[]> {
   const type = customUrl.replace("custom:", "").trim();
 
   interface CustomConfig {
@@ -837,10 +860,13 @@ async function fetchCustomFeed(customUrl: string): Promise<ParsedFeedItem[]> {
     }
 
     const items: ParsedFeedItem[] = [];
+    const linksToFetch = Array.from(matchedLinks).filter(
+      (url) => !existingUrls || !existingUrls.has(url)
+    );
 
-    // Fetch Open Graph preview metadata for the top matched articles concurrently
+    // Fetch Open Graph preview metadata for the un-synced matched articles concurrently
     await Promise.all(
-      Array.from(matchedLinks).map(async (url) => {
+      linksToFetch.map(async (url) => {
         try {
           const articleRes = await fetch(url, {
             headers: {

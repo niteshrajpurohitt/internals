@@ -208,6 +208,30 @@ export const MOCK_COMPANIES: Company[] = [
     feed_url: "https://huggingface.co/blog/feed.xml",
     created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
   },
+  {
+    id: "c-aws",
+    name: "AWS Architecture",
+    slug: "aws",
+    website_url: "https://aws.amazon.com/blogs/architecture/",
+    feed_url: "https://aws.amazon.com/blogs/architecture/feed/",
+    created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+  },
+  {
+    id: "c-crowdstrike",
+    name: "CrowdStrike",
+    slug: "crowdstrike",
+    website_url: "https://www.crowdstrike.com/blog/",
+    feed_url: null,
+    created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+  },
+  {
+    id: "c-gitlab",
+    name: "GitLab",
+    slug: "gitlab",
+    website_url: "https://about.gitlab.com/blog/",
+    feed_url: null,
+    created_at: new Date(Date.now() - 30 * 86400000).toISOString(),
+  },
 ];
 
 const companyMap = new Map(MOCK_COMPANIES.map((c) => [c.slug, c]));
@@ -413,5 +437,69 @@ export const MOCK_POSTS: PostWithCompany[] = [
     created_at: "2016-06-08T12:00:00.000Z",
     company: companyMap.get("uber")!,
     companies: companyMap.get("uber")!,
+  },
+
+  {
+    id: "post-14",
+    company_id: "c-crowdstrike",
+    title: "Falcon Sensor Update: Windows Kernel Driver Channel 291 Outage Root Cause Analysis (PIR)",
+    slug: "crowdstrike-falcon-channel-291-windows-kernel-rca",
+    source_url: "https://www.crowdstrike.com/blog/falcon-update-for-windows-hosts-technical-root-cause-analysis/",
+    summary:
+      "A technical review of how an out-of-bounds pointer read (0xc0000005) inside CSFilter.sys during Channel File 291 evaluation triggered kernel panic bugchecks on 8.5 million Windows systems, and why defensive validation in ring 0 drivers is critical.",
+    tags: ["Postmortems", "Low-Level & Compilers", "Windows Kernel", "Outage Analysis"],
+    read_time: "12 min read",
+    published_at: "2024-07-24T18:00:00.000Z",
+    created_at: "2024-07-24T18:00:00.000Z",
+    company: companyMap.get("crowdstrike")!,
+    companies: companyMap.get("crowdstrike")!,
+  },
+
+  {
+    id: "post-15",
+    company_id: "c-aws",
+    title: "AWS Post-Event Summary: Amazon Kinesis Operating Capacity and Front-End Thread Starvation Outage",
+    slug: "aws-kinesis-operating-capacity-thread-starvation-outage",
+    source_url: "https://aws.amazon.com/message/11201/",
+    summary:
+      "Detailed root cause analysis of the US-EAST-1 Kinesis disruption: how adding capacity exceeded OS thread allocation limits on the front-end fleet, creating cluster-wide cascading backpressure across dependent AWS services.",
+    tags: ["Postmortems", "Distributed Systems", "Infrastructure & Cloud", "Outage Analysis"],
+    read_time: "14 min read",
+    published_at: "2020-11-28T12:00:00.000Z",
+    created_at: "2020-11-28T12:00:00.000Z",
+    company: companyMap.get("aws")!,
+    companies: companyMap.get("aws")!,
+  },
+
+  {
+    id: "post-16",
+    company_id: "c-aws",
+    title: "Summary of the Amazon S3 Service Disruption in the Northern Virginia (US-EAST-1) Region",
+    slug: "summary-of-the-amazon-s3-service-disruption-us-east-1",
+    source_url: "https://aws.amazon.com/message/41926/",
+    summary:
+      "The definitive postmortem detailing how an operational command removed more servers than intended, triggering a complete cold restart of the S3 index subsystem and massive cascading dependency failures across the cloud.",
+    tags: ["Postmortems", "Distributed Systems", "Databases & Storage", "Outage Analysis"],
+    read_time: "10 min read",
+    published_at: "2017-03-02T12:00:00.000Z",
+    created_at: "2017-03-02T12:00:00.000Z",
+    company: companyMap.get("aws")!,
+    companies: companyMap.get("aws")!,
+  },
+
+  {
+    id: "post-17",
+    company_id: "c-openai",
+    title: "Scaling Kubernetes to 7,500 Nodes for Deep Learning Infrastructure",
+    slug: "scaling-kubernetes-to-7500-nodes",
+    source_url: "https://openai.com/index/scaling-kubernetes-to-7500-nodes/",
+    summary:
+      "OpenAI's foundational infrastructure paper explaining how they scaled a single Kubernetes cluster to 7,500 bare-metal nodes for large-scale GPU training, overcoming iptables bottlenecks, Calico BGP limits, and etcd transaction contention.",
+    tags: ["Classics", "Infrastructure & Cloud", "Distributed Systems", "Kubernetes"],
+    read_time: "10 min read",
+    published_at: "2021-01-26T16:00:00.000Z",
+    created_at: "2021-01-26T16:00:00.000Z",
+    company: companyMap.get("openai")!,
+    companies: companyMap.get("openai")!,
   },
 ];

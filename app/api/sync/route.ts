@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase";
 import { fetchAndParseFeed, detectCategories, isMarketingFluff, decodeHtmlEntities } from "@/lib/rss";
+import { LANDMARK_POSTMORTEMS, LANDMARK_CLASSICS } from "@/lib/classics";
 
 export const maxDuration = 60; // Allow up to 60s for full feed sync
 export const dynamic = "force-dynamic";
@@ -123,8 +124,8 @@ async function handleSync(req: NextRequest) {
       .ilike("feed_url", "%github.com%"),
   ]);
 
-  // Ensure all tier-1 web & platform companies exist in the database
-  const frontendCompanies = [
+  // Ensure all tier-1 web & platform and landmark companies exist in the database
+  const additionalCompanies = [
     {
       name: "Chrome Developers",
       slug: "chrome",
@@ -149,29 +150,43 @@ async function handleSync(req: NextRequest) {
       website_url: "https://evilmartians.com/chronicles",
       feed_url: "https://evilmartians.com/chronicles.rss",
     },
+    {
+      name: "CrowdStrike",
+      slug: "crowdstrike",
+      website_url: "https://www.crowdstrike.com/blog/",
+      feed_url: null,
+    },
+    {
+      name: "GitLab",
+      slug: "gitlab",
+      website_url: "https://about.gitlab.com/blog/",
+      feed_url: null,
+    },
   ];
 
   await client
     .from("companies")
-    .upsert(frontendCompanies, { onConflict: "slug", ignoreDuplicates: true });
+    .upsert(additionalCompanies, { onConflict: "slug", ignoreDuplicates: true });
 
   // Check if we have write permission (either service_role key or public insert)
   const isServiceRole = Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 
-  // 3. Fetch all companies with valid feed URLs
-  const { data: companies, error: compError } = await client
+  // 3. Fetch all companies from database
+  const { data: allCompanies, error: compError } = await client
     .from("companies")
-    .select("id, name, slug, feed_url")
-    .not("feed_url", "is", null);
+    .select("id, name, slug, feed_url");
 
-  if (compError || !companies || companies.length === 0) {
+  if (compError || !allCompanies || allCompanies.length === 0) {
     return NextResponse.json(
       { error: "Failed to fetch companies from database", details: compError?.message },
       { status: 500 }
     );
   }
 
-  // 4. Fetch all existing source URLs to prevent any duplicate insertions
+  const companiesWithFeeds = allCompanies.filter((c) => Boolean(c.feed_url));
+  const companySlugToId = new Map(allCompanies.map((c) => [c.slug, c.id]));
+
+  // 4. Fetch all existing source URLs to prevent duplicate insertions
   const { data: existingPosts, error: postFetchError } = await client
     .from("posts")
     .select("source_url");
@@ -186,7 +201,7 @@ async function handleSync(req: NextRequest) {
   const existingUrls = new Set<string>((existingPosts || []).map((p) => p.source_url));
 
   const stats = {
-    companies_scanned: companies.length,
+    companies_scanned: companiesWithFeeds.length,
     new_posts_added: 0,
     duplicates_skipped: 0,
     failed_feeds: [] as string[],
@@ -204,17 +219,41 @@ async function handleSync(req: NextRequest) {
     published_at: string;
   }> = [];
 
+  // 4b. Seed Landmark Postmortems & Classics into database if not yet present
+  const allLandmarks = [...LANDMARK_POSTMORTEMS, ...LANDMARK_CLASSICS];
+  for (const landmark of allLandmarks) {
+    if (existingUrls.has(landmark.sourceUrl)) {
+      continue;
+    }
+    const compId = companySlugToId.get(landmark.companySlug);
+    if (!compId) continue;
+
+    existingUrls.add(landmark.sourceUrl);
+    newRecordsToInsert.push({
+      company_id: compId,
+      title: landmark.title,
+      slug: landmark.slug,
+      source_url: landmark.sourceUrl,
+      summary: landmark.summary,
+      tags: landmark.tags,
+      read_time: landmark.readTime,
+      published_at: landmark.publishedAt,
+    });
+    stats.added_titles.push(`${landmark.companyName}: ${landmark.title}`);
+    stats.new_posts_added++;
+  }
+
   // 5. Scan feeds concurrently in batches of 5 to avoid overwhelming network
   const batchSize = 5;
-  for (let i = 0; i < companies.length; i += batchSize) {
-    const batch = companies.slice(i, i + batchSize);
+  for (let i = 0; i < companiesWithFeeds.length; i += batchSize) {
+    const batch = companiesWithFeeds.slice(i, i + batchSize);
 
     await Promise.all(
       batch.map(async (company) => {
         if (!company.feed_url) return;
 
         try {
-          const items = await fetchAndParseFeed(company.feed_url);
+          const items = await fetchAndParseFeed(company.feed_url, existingUrls);
 
           for (const item of items) {
             if (existingUrls.has(item.source_url)) {

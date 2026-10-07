@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "motion/react";
-import { ArrowUpRight, Clock, Hash, Bookmark } from "lucide-react";
+import { ArrowUpRight, Clock, Hash, Bookmark, AlertTriangle } from "lucide-react";
 import { PostWithCompany, CategoryFilter } from "@/lib/types";
 
 interface PostCardProps {
@@ -75,6 +75,11 @@ export function resolveCanonicalSection(tags: string[] = []): CategoryFilter {
     }
   }
 
+  // If marked as postmortem and no other pillar
+  if (tags.some((t) => t.toLowerCase() === "postmortems" || t.toLowerCase() === "postmortem")) {
+    return "Postmortems";
+  }
+
   // If marked as classic and no other pillar
   if (tags.some((t) => t.toLowerCase() === "classics")) {
     return "Classics";
@@ -121,6 +126,8 @@ const COMPANY_ACCENTS: Record<string, string> = {
   clickhouse: "bg-amber-300/80 shadow-[0_0_8px_rgba(252,211,77,0.4)]",
   supabase: "bg-emerald-500/80 shadow-[0_0_8px_rgba(16,185,129,0.4)]",
   aws: "bg-amber-500/80 shadow-[0_0_8px_rgba(245,158,11,0.4)]",
+  crowdstrike: "bg-red-500/80 shadow-[0_0_8px_rgba(239,68,68,0.4)]",
+  gitlab: "bg-orange-500/80 shadow-[0_0_8px_rgba(249,115,22,0.4)]",
   linear: "bg-indigo-300/80 shadow-[0_0_8px_rgba(165,180,252,0.4)]",
   slack: "bg-emerald-400/80 shadow-[0_0_8px_rgba(52,211,153,0.4)]",
   airbnb: "bg-rose-500/80 shadow-[0_0_8px_rgba(244,63,94,0.4)]",
@@ -145,6 +152,9 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
   const accentDotClass = COMPANY_ACCENTS[companySlug] || "bg-zinc-400";
   const canonicalSection = resolveCanonicalSection(post.tags);
   const isClassic = post.tags.some((t) => t.toLowerCase() === "classics");
+  const isPostmortem = post.tags.some(
+    (t) => t.toLowerCase() === "postmortems" || t.toLowerCase() === "postmortem"
+  );
 
   return (
     <motion.article
@@ -180,6 +190,22 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
                 {canonicalSection}
               </button>
             </div>
+
+            {isPostmortem && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onSelectCategory?.("Postmortems");
+                }}
+                className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[10px] font-medium text-rose-300 transition-all hover:border-rose-400 hover:bg-rose-500/20"
+                title="Filter by Postmortems"
+              >
+                <AlertTriangle className="h-2.5 w-2.5 text-rose-400" />
+                <span>Postmortem</span>
+              </button>
+            )}
 
             {isClassic && (
               <button

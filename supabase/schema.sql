@@ -113,7 +113,9 @@ INSERT INTO public.companies (name, slug, website_url, feed_url) VALUES
 ('Anthropic', 'anthropic', 'https://anthropic.com/research', 'custom:anthropic'),
 ('Mistral AI', 'mistral', 'https://mistral.ai/news/', 'custom:mistral'),
 ('Google Research', 'google', 'https://research.google/blog/', 'https://research.google/blog/rss/'),
-('Hugging Face', 'huggingface', 'https://huggingface.co/blog', 'https://huggingface.co/blog/feed.xml')
+('Hugging Face', 'huggingface', 'https://huggingface.co/blog', 'https://huggingface.co/blog/feed.xml'),
+('CrowdStrike', 'crowdstrike', 'https://www.crowdstrike.com/blog/', NULL),
+('GitLab', 'gitlab', 'https://about.gitlab.com/blog/', NULL)
 ON CONFLICT (slug) DO UPDATE SET
     name = EXCLUDED.name,
     website_url = EXCLUDED.website_url,
@@ -360,5 +362,71 @@ SELECT
     '10 min read',
     '2016-06-08 12:00:00+00'::timestamptz
 FROM public.companies c WHERE c.slug = 'uber'
+ON CONFLICT (source_url) DO NOTHING;
+
+INSERT INTO public.posts (
+    company_id, 
+    title, 
+    slug, 
+    source_url, 
+    summary, 
+    tags, 
+    read_time, 
+    published_at
+)
+SELECT 
+    c.id,
+    'Falcon Sensor Update: Windows Kernel Driver Channel 291 Outage Root Cause Analysis (PIR)',
+    'crowdstrike-falcon-channel-291-windows-kernel-rca',
+    'https://www.crowdstrike.com/blog/falcon-update-for-windows-hosts-technical-root-cause-analysis/',
+    'A technical review of how an out-of-bounds pointer read (0xc0000005) inside CSFilter.sys during Channel File 291 evaluation triggered kernel panic bugchecks on 8.5 million Windows systems, and why defensive validation in ring 0 drivers is critical.',
+    ARRAY['Postmortems', 'Low-Level & Compilers', 'Windows Kernel', 'Outage Analysis'],
+    '12 min read',
+    '2024-07-24 18:00:00+00'::timestamptz
+FROM public.companies c WHERE c.slug = 'crowdstrike'
+ON CONFLICT (source_url) DO NOTHING;
+
+INSERT INTO public.posts (
+    company_id, 
+    title, 
+    slug, 
+    source_url, 
+    summary, 
+    tags, 
+    read_time, 
+    published_at
+)
+SELECT 
+    c.id,
+    'AWS Post-Event Summary: Amazon Kinesis Operating Capacity and Front-End Thread Starvation Outage',
+    'aws-kinesis-operating-capacity-thread-starvation-outage',
+    'https://aws.amazon.com/message/11201/',
+    'Detailed root cause analysis of the US-EAST-1 Kinesis disruption: how adding capacity exceeded OS thread allocation limits on the front-end fleet, creating cluster-wide cascading backpressure across dependent AWS services.',
+    ARRAY['Postmortems', 'Distributed Systems', 'Infrastructure & Cloud', 'Outage Analysis'],
+    '14 min read',
+    '2020-11-28 12:00:00+00'::timestamptz
+FROM public.companies c WHERE c.slug = 'aws'
+ON CONFLICT (source_url) DO NOTHING;
+
+INSERT INTO public.posts (
+    company_id, 
+    title, 
+    slug, 
+    source_url, 
+    summary, 
+    tags, 
+    read_time, 
+    published_at
+)
+SELECT 
+    c.id,
+    'Summary of the Amazon S3 Service Disruption in the Northern Virginia (US-EAST-1) Region',
+    'summary-of-the-amazon-s3-service-disruption-us-east-1',
+    'https://aws.amazon.com/message/41926/',
+    'The definitive postmortem detailing how an operational command removed more servers than intended, triggering a complete cold restart of the S3 index subsystem and massive cascading dependency failures across the cloud.',
+    ARRAY['Postmortems', 'Distributed Systems', 'Databases & Storage', 'Outage Analysis'],
+    '10 min read',
+    '2017-03-02 12:00:00+00'::timestamptz
+FROM public.companies c WHERE c.slug = 'aws'
 ON CONFLICT (source_url) DO NOTHING;
 

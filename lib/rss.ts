@@ -333,8 +333,8 @@ export function isMarketingFluff(title: string, content: string = ""): boolean {
 // Refined 7-Pillar Technical Taxonomy with exact technical signals
 const CATEGORY_KEYWORDS: Record<string, string[]> = {
   "AI & Machine Learning": [
-    "ai",
     "llm",
+    "large language model",
     "gpt",
     "gpu",
     "triton",
@@ -361,6 +361,16 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "claude",
     "llama",
     "gemini",
+    "reinforcement learning",
+    "rlhf",
+    "pretraining",
+    "synthetic data",
+    "ai model",
+    "ai models",
+    "voice ai",
+    "ai agent",
+    "ai agents",
+    "artificial intelligence",
   ],
   "Distributed Systems": [
     "distributed system",
@@ -403,6 +413,11 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "distributed tracing",
     "load balancing",
     "opentelemetry",
+    "vitess",
+    "horizontal scaling",
+    "horizontally scaling",
+    "distributed lock",
+    "sharding",
   ],
   "Databases & Storage": [
     "postgres",
@@ -426,6 +441,7 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "caching",
     "redis",
     "rocksdb",
+    "pebble",
     "btree",
     "b-tree",
     "lsm",
@@ -433,6 +449,14 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "nvme",
     "pgvector",
     "columnar",
+    "vitess",
+    "query optimization",
+    "connection pool",
+    "database migration",
+    "table partition",
+    "read replica",
+    "replicas",
+    "data warehouse",
   ],
   "Infrastructure & Cloud": [
     "kubernetes",
@@ -462,6 +486,12 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "observability",
     "sre",
     "terraform",
+    "monitoring",
+    "packet",
+    "telemetry",
+    "tracing",
+    "sandbox",
+    "microvm",
   ],
   "Low-Level & Compilers": [
     "rust",
@@ -528,14 +558,10 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "streaming ssr",
     "hydration",
     "islands architecture",
-    "micro-frontend",
-    "microfrontends",
     "state management",
     "core web vitals",
     "web vitals",
     "inp",
-    "lcp",
-    "layout shift",
     "vite",
     "webpack",
     "rails",
@@ -548,16 +574,7 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "monorepo",
     "tailwind",
     "accessibility",
-    "a11y",
-    "design tokens",
-    "web worker",
-    "service worker",
     "pwa",
-    "react native",
-    "electron",
-    "playwright",
-    "headless ui",
-    "storybook",
   ],
 };
 
@@ -567,7 +584,6 @@ function escapeRegex(str: string): string {
 
 function matchesKeyword(text: string, kw: string): boolean {
   const escaped = escapeRegex(kw.toLowerCase());
-  // Use regex word boundaries for alphanumeric boundaries, fallback for special chars like c++ or next.js
   const prefix = /^[a-z0-9]/i.test(kw) ? "\\b" : "(?:^|\\s|[^a-zA-Z0-9])";
   const suffix = /[a-z0-9]$/i.test(kw) ? "\\b" : "(?:$|\\s|[^a-zA-Z0-9])";
   const regex = new RegExp(`${prefix}${escaped}${suffix}`, "i");
@@ -579,10 +595,9 @@ export function detectCategories(
   summary: string,
   existingTags: string[] = []
 ): string[] {
-  const combined = `${title} ${summary} ${existingTags.join(" ")}`;
   const detectedTags = new Set<string>();
 
-  // Preserve 'Classics' and 'Postmortems' tags if in existing tags
+  // Strictly preserve 'Classics' and 'Postmortems' tags
   if (existingTags.some((t) => t.toLowerCase() === "classics")) {
     detectedTags.add("Classics");
   }
@@ -599,14 +614,19 @@ export function detectCategories(
     detectedTags.add("Postmortems");
   }
 
-  // Score match count per category using strict word-boundary matching
+  // Score match count per category:
+  // Title matches are weighted 3x (+3 points) vs Body matches (+1 point)
+  // to ensure the primary subject of the article always dictates the category.
   const categoryScores: { category: string; score: number }[] = [];
 
   for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
     let score = 0;
     for (const kw of keywords) {
-      if (matchesKeyword(combined, kw)) {
-        score++;
+      if (matchesKeyword(title, kw)) {
+        score += 3;
+      }
+      if (matchesKeyword(summary, kw)) {
+        score += 1;
       }
     }
     if (score > 0) {
@@ -622,7 +642,7 @@ export function detectCategories(
     detectedTags.add(item.category);
   }
 
-  // Also include 1-2 specific keyword chips if found
+  // Include 1-2 specific keyword chips if found in title or summary
   const specificSignals = [
     "Rust",
     "eBPF",
@@ -636,15 +656,16 @@ export function detectCategories(
     "CRDT",
     "Linux Kernel",
     "Raft",
+    "Vitess",
   ];
   for (const sig of specificSignals) {
-    if (matchesKeyword(combined, sig)) {
+    if (matchesKeyword(title, sig) || matchesKeyword(summary, sig)) {
       detectedTags.add(sig);
     }
   }
 
   const tagsArray = Array.from(detectedTags);
-  return tagsArray.length > 0 ? tagsArray.slice(0, 4) : [];
+  return tagsArray.length > 0 ? tagsArray.slice(0, 4) : ["Infrastructure & Cloud"];
 }
 
 export function decodeHtmlEntities(text: string): string {

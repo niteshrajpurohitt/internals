@@ -72,29 +72,46 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   useEffect(() => {
     const isDefault =
       selectedCategory === "All" && selectedCompanyId === "all" && !searchQuery.trim();
-    if (isDefault && posts === initialPosts) {
+
+    if (isDefault) {
+      if (posts !== initialPosts) {
+        setPosts(initialPosts);
+        setCurrentTotalCount(totalCount);
+        setHasMore(totalCount ? initialPosts.length < totalCount : true);
+      }
+      setIsFiltering(false);
       return;
     }
+
+    const abortController = new AbortController();
 
     const timer = setTimeout(async () => {
       setIsFiltering(true);
       try {
         const url = buildQueryUrl(0, 30);
-        const res = await fetch(url);
+        const res = await fetch(url, { signal: abortController.signal });
         if (!res.ok) throw new Error("Failed to filter posts");
         const data = await res.json();
         setPosts(data.posts || []);
         setCurrentTotalCount(data.totalCount);
         setHasMore(data.hasMore);
-      } catch (err) {
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === "AbortError") {
+          return; // Ignore aborted in-flight requests
+        }
         console.error("Filter error:", err);
       } finally {
-        setIsFiltering(false);
+        if (!abortController.signal.aborted) {
+          setIsFiltering(false);
+        }
       }
     }, searchQuery ? 250 : 0);
 
-    return () => clearTimeout(timer);
-  }, [selectedCategory, selectedCompanyId, searchQuery]);
+    return () => {
+      clearTimeout(timer);
+      abortController.abort();
+    };
+  }, [selectedCategory, selectedCompanyId, searchQuery, initialPosts, totalCount]);
 
   const loadMorePosts = async () => {
     if (isLoadingMore || !hasMore || isFiltering) return;
@@ -192,6 +209,12 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setSearchQuery("");
+                searchInputRef.current?.blur();
+              }
+            }}
             placeholder="Search systems, architectures, algorithms, or companies..."
             className="h-12 w-full rounded-xl border border-white/[0.08] bg-[#121215]/90 pr-24 pl-11 text-sm text-zinc-100 backdrop-blur-sm transition-all duration-150 placeholder:text-zinc-500 focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500/50 focus:outline-none"
           />

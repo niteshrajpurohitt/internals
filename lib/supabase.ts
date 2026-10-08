@@ -225,6 +225,74 @@ export function getCategoryTagVariations(category: string): string[] {
   }
 }
 
+export function parseSearchTokens(searchQuery: string): string[] {
+  const cleaned = searchQuery
+    .replace(/[(),%_.:;"'`\\/\[\]{}|]/g, " ")
+    .trim()
+    .toLowerCase();
+
+  const tokens = Array.from(new Set(cleaned.split(/\s+/).filter(Boolean)));
+  return tokens.slice(0, 5);
+}
+
+let cachedCompanies: Company[] | null = null;
+let lastCompanyFetch = 0;
+
+export async function getCachedCompanies(): Promise<Company[]> {
+  const now = Date.now();
+  if (cachedCompanies && now - lastCompanyFetch < 5 * 60 * 1000) {
+    return cachedCompanies;
+  }
+  const comps = await getCompanies();
+  if (comps.length > 0) {
+    cachedCompanies = comps;
+    lastCompanyFetch = now;
+  }
+  return comps;
+}
+
+export function applySearchFilter<T>(
+  query: T,
+  searchQuery: string | undefined,
+  companies: Company[]
+): T {
+  if (!searchQuery || !searchQuery.trim()) {
+    return query;
+  }
+
+  const tokens = parseSearchTokens(searchQuery);
+  if (tokens.length === 0) {
+    return query;
+  }
+
+  let currentQuery = query as any;
+
+  for (const token of tokens) {
+    const matchedComps = companies.filter(
+      (c) =>
+        c.name.toLowerCase().includes(token) ||
+        c.slug.toLowerCase().includes(token)
+    );
+
+    if (matchedComps.length === 1) {
+      currentQuery = currentQuery.or(
+        `title.ilike.%${token}%,summary.ilike.%${token}%,company_id.eq.${matchedComps[0].id}`
+      );
+    } else if (matchedComps.length > 1) {
+      const ids = matchedComps.map((c) => c.id).join(",");
+      currentQuery = currentQuery.or(
+        `title.ilike.%${token}%,summary.ilike.%${token}%,company_id.in.(${ids})`
+      );
+    } else {
+      currentQuery = currentQuery.or(
+        `title.ilike.%${token}%,summary.ilike.%${token}%`
+      );
+    }
+  }
+
+  return currentQuery as T;
+}
+
 export async function getPostCount(options?: PostQueryOptions): Promise<number> {
   const { companyId, category, searchQuery } = options || {};
 
@@ -243,10 +311,8 @@ export async function getPostCount(options?: PostQueryOptions): Promise<number> 
       query = query.overlaps("tags", variations);
     }
     if (searchQuery && searchQuery.trim()) {
-      const cleanQ = searchQuery.trim().replace(/[%_]/g, "");
-      if (cleanQ) {
-        query = query.or(`title.ilike.%${cleanQ}%,summary.ilike.%${cleanQ}%`);
-      }
+      const companies = await getCachedCompanies();
+      query = applySearchFilter(query, searchQuery, companies);
     }
 
     const { count, error } = await query;
@@ -337,10 +403,8 @@ export async function getPosts(options?: PostQueryOptions): Promise<PostWithComp
       query = query.overlaps("tags", variations);
     }
     if (searchQuery && searchQuery.trim()) {
-      const cleanQ = searchQuery.trim().replace(/[%_]/g, "");
-      if (cleanQ) {
-        query = query.or(`title.ilike.%${cleanQ}%,summary.ilike.%${cleanQ}%`);
-      }
+      const companies = await getCachedCompanies();
+      query = applySearchFilter(query, searchQuery, companies);
     }
 
     const isGeneralFeed = (!companyId || companyId === "all") && !searchQuery;

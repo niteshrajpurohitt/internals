@@ -48,7 +48,7 @@ const UNIVERSAL_VETO_PATTERNS: RegExp[] = [
   // 5. Customer Marketing, Promotional & Sales Case Studies
   /^how\s+[\w\s]+\s+(is using|uses|scales with|transforms|reimagines|chose|accelerates with)\s+/i,
   /\b(customer story|customer spotlight|customer success|client story|case study)\b/i,
-  /\b(pricing change|price update|discount|black friday|cyber monday)\b/i,
+  /\b(pricing change|price update|discount|lower pricing|reduced pricing|cutting\s+.*prices|price reduction|new pricing|price decrease|price increase|black friday|cyber monday)\b/i,
 
   // 6. Events, Conferences, Talks, Webinars & Podcasts
   /\b(webinar|conference recap|visit our booth|fireside chat|panel discussion|roundtable|watch the recording|podcast episode)\b/i,

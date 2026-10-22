@@ -149,9 +149,12 @@ async function handleSync(req: NextRequest) {
       .ilike("feed_url", "%github.com%"),
     client
       .from("companies")
-      .update({ feed_url: "https://tigerbeetle.com/blog/rss.xml" })
-      .eq("slug", "tigerbeetle")
-      .ilike("feed_url", "%github.com%"),
+      .update({ feed_url: "https://tigerbeetle.com/blog/atom.xml" })
+      .eq("slug", "tigerbeetle"),
+    client
+      .from("companies")
+      .update({ feed_url: "https://www.fastly.com/blog_rss.xml" })
+      .eq("slug", "fastly"),
   ]);
 
   // Ensure all tier-1 web & platform and landmark companies exist in the database
@@ -196,7 +199,7 @@ async function handleSync(req: NextRequest) {
       name: "Fastly",
       slug: "fastly",
       website_url: "https://www.fastly.com/blog",
-      feed_url: "https://www.fastly.com/blog/feed/",
+      feed_url: "https://www.fastly.com/blog_rss.xml",
     },
     {
       name: "Mistral AI",

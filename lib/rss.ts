@@ -1,30 +1,35 @@
 import Parser from "rss-parser";
 
 const parser = new Parser({
-  timeout: 8000,
+  timeout: 10000,
   headers: {
-    "User-Agent": "engfeed-aggregator/1.0 (+https://engfeed.dev; discovery engine)",
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 (engfeed-aggregator/1.0; +https://engfeed.dev)",
     Accept: "application/rss+xml, application/atom+xml, text/xml, application/xml, */*",
   },
 });
 
-// Universal Veto: immediate rejection of product GA announcements, changelogs, marketing, PR, events, and HR
-const UNIVERSAL_VETO_PATTERNS: RegExp[] = [
-  // 1. General Availability & Feature Rollout Announcements
+// 1. Strict Title-Only Vetoes: immediate rejection of marketing headlines, product launch PR, changelogs, events, and HR
+const TITLE_VETO_PATTERNS: RegExp[] = [
+  // General Availability & Feature Rollout Headlines
   /\b(now generally available|generally available( on| in| across)?|general availability|\bGA\b)\b/i,
   /\b(now available( on| in| for| across)?|is now available|now in (preview|beta|early access))\b/i,
   /\b(available on [a-zA-Z\s]*(gateway|marketplace|catalog|hub|cloud))\b/i,
   /\b(introducing support for|added support for|now supported on|now live on)\b/i,
   /\b[a-zA-Z0-9\s]+\s+[0-9]+\.[0-9]+\s+(is\s+)?now available\b/i,
 
-  // 2. Product / Feature Launch Announcements & Changelogs
+  // Product / Feature Launch Announcements & Changelogs
   /^(announcing|introducing|meet|welcome to|new in)\s+[\w\s]+(dashboard|console|ui|portal|pricing|gateway|tier|service|feature)\b/i,
   /\b(what's new in|monthly roundup|weekly roundup|quarterly update|product update|changelog|release notes)\b/i,
   /\b(this release (targets|introduces|brings|adds|fixes))\b/i,
+  /^v?[0-9]+\.[0-9]+/i,
+  /^release\s+v/i,
+  /merge\s+pull\s+request/i,
+  /release\s+changelog/i,
 
-  // 3. Corporate PR, Deal Announcements, Partnerships & Commercial Alliances
+  // Corporate PR, Deal Announcements, Partnerships & Funding
   /\b(partner(s|ed|ing)?\s+(with|for)|partnership with|join forces|teams? up with|teaming up with|\bx\s+[A-Z][a-zA-Z0-9]+)\b/i,
-  /\b(strategic partnership|content partnership|partner network|partner for your|commercial agreement|strategic alliance|enterprise agreement|sovereign enterprise)\b/i,
+  /\b(strategic partnership|content partnership|partner network|commercial agreement|strategic alliance|enterprise agreement|sovereign enterprise)\b/i,
   /\b(opens?|opening|new)\s+([a-zA-Z\s]+)?(hub|office|headquarters|campus|center|centre)\b/i,
   /\b(series\s+[a-f]|funding round|valuation|ipo|seed round|venture round|capital raised)\b/i,
   /\b(appointed as|joins as|executive team|welcoming our new|hires? as|c-suite)\b/i,
@@ -33,31 +38,32 @@ const UNIVERSAL_VETO_PATTERNS: RegExp[] = [
   /\b(collaborate to (reimagine|transform|bring)|collaborator for (our|creative|sales|cfo))\b/i,
   /\b(bring [a-zA-Z\s]+ to all citizens)\b/i,
 
-  // 4. Public Policy, Government, Lobbying & Regulatory Affairs
+  // Public Policy, Government & Regulatory Affairs
   /\b(public policy|policy agenda|political advocacy|tech policy|industrial policy|government relations|national security partnerships?)\b/i,
   /\b(tariffs? campaign|influence activity|regulatory framework|societal resilience|advocacy agenda|amicus brief)\b/i,
   /\b(economic research exchange|funding grants?|grant program|fellowship program|teen development)\b/i,
 
-  // 5. Economic, Labor Market, Jobs & CSR Studies
-  /\b(robot exposure index|physical job tasks|jobs? will robots do|predict the jobs)\b/i,
-  /\b(labor market|workforce impact|future of work|job disruption|jobs? transition|workforce transition|unemployment rate)\b/i,
-  /\b(economic impact|gdp growth|macroeconomic|wages? impact)\b/i,
-  /\b(diversity report|sustainability report|carbon footprint|our pledge|our commitment)\b/i,
-  /\b(can ai help us collaborate|collaborate on user sessions|session replay)\b/i,
-
-  // 5. Customer Marketing, Promotional & Sales Case Studies
+  // Customer Marketing, Promotional & Sales Case Studies
   /^how\s+[\w\s]+\s+(is using|uses|scales with|transforms|reimagines|chose|accelerates with)\s+/i,
   /\b(customer story|customer spotlight|customer success|client story|case study)\b/i,
   /\b(pricing change|price update|discount|lower pricing|reduced pricing|cutting\s+.*prices|price reduction|new pricing|price decrease|price increase|black friday|cyber monday)\b/i,
 
-  // 6. Events, Conferences, Talks, Webinars & Podcasts
+  // Events, Conferences, Talks, Webinars & Podcasts
   /\b(webinar|conference recap|visit our booth|fireside chat|panel discussion|roundtable|watch the recording|podcast episode)\b/i,
-  /\b(share your story|tell us what you think|community survey|take the survey|feedback form)\b/i,
   /\b(named a leader in gartner|forrester wave|magic quadrant)\b/i,
   /\b(intern spotlight|life at\s+[A-Z]|meet the team|employee spotlight|we are hiring)\b/i,
 ];
 
-// Core architectural & systems markers
+// 2. High-Confidence Content-Only Vetoes: applied to body summary to reject non-technical articles without false-vetoing technical posts
+const CONTENT_VETO_PATTERNS: RegExp[] = [
+  /\b(share your story|tell us what you think|community survey|take the survey|feedback form)\b/i,
+  /\b(robot exposure index|physical job tasks|jobs? will robots do|predict the jobs)\b/i,
+  /\b(diversity report|sustainability report|carbon footprint|our pledge|our commitment)\b/i,
+  /\b(quarterly results|investor relations|shareholder letter|earnings conference call)\b/i,
+  /\b(we are hiring|apply now for|join our team as a|explore open roles|open positions at)\b/i,
+];
+
+// Core architectural, systems, security & cloud engineering markers
 const CORE_TECHNICAL_MARKERS = [
   // Systems & Architecture
   "latency",
@@ -66,6 +72,10 @@ const CORE_TECHNICAL_MARKERS = [
   "distributed systems",
   "distributed",
   "concurrency",
+  "multithreading",
+  "thread",
+  "threads",
+  "async",
   "sharding",
   "replication",
   "kernel",
@@ -98,8 +108,45 @@ const CORE_TECHNICAL_MARKERS = [
   "chaos engineering",
   "rate limit",
   "rate limiting",
+  "backpressure",
+  "event loop",
+
+  // Security, Vulnerabilities & Cryptography
+  "security",
+  "vulnerability",
+  "vulnerabilities",
+  "cve",
+  "encryption",
+  "cryptography",
+  "tls",
+  "ssl",
+  "handshake",
+  "authentication",
+  "authorization",
+  "zero-day",
+  "fuzzing",
+  "exploit",
+  "sandbox",
+  "sandboxing",
+  "memory safety",
+
+  // Reliability, Availability & Failure Analysis
+  "outage",
+  "incident",
+  "postmortem",
+  "root cause",
+  "failover",
+  "availability",
+  "high availability",
+  "slo",
+  "sli",
+  "sla",
+  "scalability",
 
   // Data & Storage Engines
+  "database",
+  "databases",
+  "storage engine",
   "postgres",
   "postgresql",
   "mysql",
@@ -116,14 +163,18 @@ const CORE_TECHNICAL_MARKERS = [
   "lsm",
   "lsm-tree",
   "nvme",
-  "storage engine",
   "mvcc",
   "columnar",
   "query planner",
   "database index",
   "database indexing",
+  "indexing",
+  "wal",
+  "write-ahead log",
+  "read replica",
 
-  // Cloud & Infra
+  // Cloud, Infra & Networking
+  "infrastructure",
   "kubernetes",
   "k8s",
   "docker",
@@ -132,10 +183,17 @@ const CORE_TECHNICAL_MARKERS = [
   "anycast",
   "cdn",
   "networking",
-  "firecracker",
-  "serverless",
+  "network",
+  "routing",
   "dns",
   "bgp",
+  "tcp",
+  "udp",
+  "quic",
+  "http/3",
+  "reverse proxy",
+  "firecracker",
+  "serverless",
   "wireguard",
   "ddos",
   "envoy",
@@ -227,24 +285,35 @@ const ENGINEERING_ACTION_VERBS = [
 ];
 
 export function isDisqualifiedByVeto(title: string, content: string = ""): boolean {
-  const combined = `${title} ${content}`;
   const lowerTitle = title.toLowerCase();
 
-  // If title explicitly signals engineering action, exempt from loose patterns
+  // If title explicitly signals engineering action or incident analysis, exempt from loose patterns
   const isExplicitEngineeringTitle =
     lowerTitle.includes("how we built") ||
     lowerTitle.includes("how we scaled") ||
     lowerTitle.includes("how we migrated") ||
     lowerTitle.includes("postmortem") ||
-    lowerTitle.includes("outage analysis");
+    lowerTitle.includes("outage analysis") ||
+    lowerTitle.includes("root cause analysis") ||
+    lowerTitle.includes("incident review");
 
   if (isExplicitEngineeringTitle) {
     return false;
   }
 
-  for (const pattern of UNIVERSAL_VETO_PATTERNS) {
-    if (pattern.test(title) || pattern.test(combined)) {
+  // Gate 1: Check Strict Title Vetoes
+  for (const pattern of TITLE_VETO_PATTERNS) {
+    if (pattern.test(title)) {
       return true;
+    }
+  }
+
+  // Gate 2: Check Content-Only Vetoes (only for high-confidence non-technical categories like surveys/CSR)
+  if (content) {
+    for (const pattern of CONTENT_VETO_PATTERNS) {
+      if (pattern.test(content)) {
+        return true;
+      }
     }
   }
 
@@ -253,6 +322,15 @@ export function isDisqualifiedByVeto(title: string, content: string = ""): boole
 
 export function calculateTechnicalScore(title: string, content: string = ""): number {
   let score = 0;
+
+  // Explicit postmortem and failure analysis terms get instant pass boost (+3 points)
+  if (
+    /\b(postmortem|outage|rca|incident|root\s+cause|disruption|crash|memory\s+leak|deadlock|data\s+loss)\b/i.test(
+      title
+    )
+  ) {
+    score += 3;
+  }
 
   // Title matches are weighted heavily (2 points each)
   for (const marker of CORE_TECHNICAL_MARKERS) {
@@ -287,16 +365,17 @@ export function isTechnicalEngineeringArticle(title: string, content: string = "
 
   // Reject empty, broken, or ultra-short summaries (unless title explicitly has positive technical signals)
   const cleanContent = (content || "").trim();
+  const strippedContent = cleanContent.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
   const titleScore = calculateTechnicalScore(title, "");
-  if (!cleanContent || cleanContent === "No content." || (cleanContent.length < 20 && titleScore < 2)) {
+  if (!strippedContent || strippedContent === "No content." || (strippedContent.length < 20 && titleScore < 2)) {
     return false;
   }
 
   // Reject malformed HTML fragments or broken sentence starts
   if (
-    /^(from is|is now|this release|\. [0-9]|on \. [0-9])/i.test(cleanContent) ||
-    /GoogleAI Gateway/i.test(cleanContent) ||
-    /\b(available on [a-zA-Z\s]*(gateway|marketplace|catalog))\b/i.test(cleanContent)
+    /^(from is|is now|this release|\. [0-9]|on \. [0-9])/i.test(strippedContent) ||
+    /GoogleAI Gateway/i.test(strippedContent) ||
+    /\b(available on [a-zA-Z\s]*(gateway|marketplace|catalog))\b/i.test(strippedContent)
   ) {
     return false;
   }

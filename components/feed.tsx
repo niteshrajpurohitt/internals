@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import { Search, X, RefreshCw, Check } from "lucide-react";
 import { PostWithCompany, Company, CategoryFilter } from "@/lib/types";
+import { interleavePostsByCompany } from "@/lib/supabase";
 import { PostCard } from "./post-card";
 
 interface FeedProps {
@@ -125,10 +126,14 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
         setPosts((prev) => {
           const existingIds = new Set(prev.map((p) => p.id));
           const uniqueNew = data.posts.filter((p: PostWithCompany) => !existingIds.has(p.id));
-          return [...prev, ...uniqueNew];
+          const isGeneral = selectedCompanyId === "all" && !searchQuery.trim();
+          const combined = [...prev, ...uniqueNew];
+          return isGeneral ? interleavePostsByCompany(combined, 2) : combined;
         });
         setHasMore(data.hasMore);
-        setCurrentTotalCount(data.totalCount);
+        if (data.totalCount !== undefined) {
+          setCurrentTotalCount(data.totalCount);
+        }
       } else {
         setHasMore(false);
       }

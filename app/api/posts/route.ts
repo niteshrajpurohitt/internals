@@ -19,7 +19,8 @@ export async function GET(req: NextRequest) {
       getPostCount(queryOptions),
     ]);
 
-    const hasMore = offset + posts.length < totalCount;
+    const hasMore =
+      totalCount > 0 ? offset + posts.length < totalCount : posts.length === limit;
 
     return NextResponse.json({
       posts,

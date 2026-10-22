@@ -20,6 +20,7 @@ export async function GET() {
 
   // 2. Fetch all posts metadata (id, company_id, title, summary, tags, read_time, published_at)
   // Fetch up to 1000 posts for deep analysis
+
   const { data: posts, error: postsErr } = await client
     .from("posts")
     .select(`
@@ -53,6 +54,8 @@ export async function GET() {
     tagDistribution: {} as Record<string, number>,
     companyDistribution: {} as Record<string, number>,
   };
+
+  
 
   for (const p of posts) {
     const compName = (p.companies as any)?.name || "Unknown";
@@ -90,7 +93,7 @@ export async function GET() {
       }
     }
 
-    // Check PR/marketing
+    // Check PR/marketin
     if (
       titleLower.includes("partner") ||
       titleLower.includes("webinar") ||
@@ -119,6 +122,8 @@ export async function GET() {
       }
     }
 
+
+  
     // Check fallback tag
     const isOnlyArchEng =
       p.tags?.length === 2 &&

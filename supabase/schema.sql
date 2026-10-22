@@ -84,7 +84,7 @@ INSERT INTO public.companies (name, slug, website_url, feed_url) VALUES
 -- Databases, Storage & Consensus
 ('Supabase', 'supabase', 'https://supabase.com/blog', 'https://supabase.com/rss.xml'),
 ('ClickHouse', 'clickhouse', 'https://clickhouse.com/blog', 'custom:clickhouse'),
-('TigerBeetle', 'tigerbeetle', 'https://tigerbeetle.com/blog', 'https://tigerbeetle.com/blog/rss.xml'),
+('TigerBeetle', 'tigerbeetle', 'https://tigerbeetle.com/blog', 'https://tigerbeetle.com/blog/atom.xml'),
 ('CockroachDB', 'cockroachdb', 'https://www.cockroachlabs.com/blog/', 'custom:cockroachdb'),
 ('ScyllaDB', 'scylladb', 'https://www.scylladb.com/', 'https://www.scylladb.com/feed/'),
 ('PlanetScale', 'planetscale', 'https://planetscale.com/blog', 'https://planetscale.com/blog/rss.xml'),

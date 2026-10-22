@@ -251,6 +251,10 @@ export async function getCachedCompanies(): Promise<Company[]> {
   return comps;
 }
 
+const COMMON_SEARCH_STOPWORDS = new Set([
+  "in", "at", "to", "on", "by", "of", "for", "or", "an", "is", "the", "and", "how", "why", "we"
+]);
+
 export function applySearchFilter<T>(
   query: T,
   searchQuery: string | undefined,
@@ -268,11 +272,20 @@ export function applySearchFilter<T>(
   let currentQuery = query as any;
 
   for (const token of tokens) {
-    const matchedComps = companies.filter(
-      (c) =>
-        c.name.toLowerCase().includes(token) ||
-        c.slug.toLowerCase().includes(token)
-    );
+    // Only attempt company matching if the token is at least 3 characters and not a common stopword
+    const shouldCheckCompany = token.length >= 3 && !COMMON_SEARCH_STOPWORDS.has(token);
+
+    const matchedComps = shouldCheckCompany
+      ? companies.filter((c) => {
+          const slug = c.slug.toLowerCase();
+          const name = c.name.toLowerCase();
+          return (
+            slug === token ||
+            name === token ||
+            (token.length >= 4 && (slug.startsWith(token) || name.startsWith(token)))
+          );
+        })
+      : [];
 
     if (matchedComps.length === 1) {
       currentQuery = currentQuery.or(
@@ -407,10 +420,8 @@ export async function getPosts(options?: PostQueryOptions): Promise<PostWithComp
       query = applySearchFilter(query, searchQuery, companies);
     }
 
-    const isGeneralFeed = (!companyId || companyId === "all") && !searchQuery;
-    const fetchLimit = isGeneralFeed ? Math.min(limit * 2, 120) : limit;
-
-    query = query.range(offset, offset + fetchLimit - 1);
+    // Deterministic SQL offset range to prevent skipped or duplicated rows across pagination
+    query = query.range(offset, offset + limit - 1);
 
     const { data, error } = await query;
 
@@ -425,12 +436,13 @@ export async function getPosts(options?: PostQueryOptions): Promise<PostWithComp
       company: post.companies || null,
     })) as PostWithCompany[];
 
-    if (isGeneralFeed) {
-      const interleaved = interleavePostsByCompany(normalized, 2);
-      return interleaved.slice(0, limit);
+    // If fetching the first page of the general feed, apply interleaving directly
+    const isGeneralFeed = (!companyId || companyId === "all") && !searchQuery;
+    if (isGeneralFeed && offset === 0) {
+      return interleavePostsByCompany(normalized, 2);
     }
 
-    return normalized.slice(0, limit);
+    return normalized;
   } catch (err) {
     console.warn("Supabase connection error:", err);
     return [];

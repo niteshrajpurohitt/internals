@@ -66,15 +66,17 @@ export function getServiceSupabase() {
   return supabase;
 }
 
-export async function getCompanies(): Promise<Company[]> {
+export async function getCompanies(options?: { minPosts?: number }): Promise<Company[]> {
   if (!supabase) {
     return [];
   }
 
+  const minPosts = options?.minPosts ?? 0;
+
   try {
     const { data, error } = await supabase
       .from("companies")
-      .select("*")
+      .select("id, name, slug, website_url, feed_url, created_at, posts(count)")
       .order("name", { ascending: true });
 
     if (error || !data) {
@@ -82,7 +84,21 @@ export async function getCompanies(): Promise<Company[]> {
       return [];
     }
 
-    return data as Company[];
+    const formatted: Company[] = data.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      website_url: c.website_url,
+      feed_url: c.feed_url,
+      created_at: c.created_at,
+      post_count: c.posts?.[0]?.count ?? 0,
+    }));
+
+    if (minPosts > 0) {
+      return formatted.filter((c) => (c.post_count ?? 0) >= minPosts);
+    }
+
+    return formatted;
   } catch (err) {
     console.warn("Supabase connection error:", err);
     return [];

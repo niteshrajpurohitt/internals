@@ -200,11 +200,13 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               className="h-7 cursor-pointer border border-white/25 bg-black px-2 font-mono text-xs text-white focus:border-white focus:outline-none"
             >
               <option value="all">All Companies</option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id} className="bg-black text-white">
-                  {c.name}
-                </option>
-              ))}
+              {companies
+                .filter((c) => c.post_count === undefined || c.post_count >= 2)
+                .map((c) => (
+                  <option key={c.id} value={c.id} className="bg-black text-white">
+                    {c.name}
+                  </option>
+                ))}
             </select>
           </div>
         </div>

@@ -111,7 +111,6 @@ INSERT INTO public.companies (name, slug, website_url, feed_url) VALUES
 -- AI Systems, Compute & ML Infrastructure
 ('OpenAI', 'openai', 'https://openai.com/index/engineering/', 'https://openai.com/news/rss.xml'),
 ('Anthropic', 'anthropic', 'https://anthropic.com/research', 'custom:anthropic'),
-('Mistral AI', 'mistral', 'https://mistral.ai/news/', 'custom:mistral'),
 ('Google Research', 'google', 'https://research.google/blog/', 'https://research.google/blog/rss/'),
 ('Hugging Face', 'huggingface', 'https://huggingface.co/blog', 'https://huggingface.co/blog/feed.xml'),
 ('CrowdStrike', 'crowdstrike', 'https://www.crowdstrike.com/blog/', NULL),

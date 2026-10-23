@@ -5,6 +5,7 @@ export interface Company {
   website_url: string;
   feed_url: string | null;
   created_at: string;
+  post_count?: number;
 }
 
 export interface Post {

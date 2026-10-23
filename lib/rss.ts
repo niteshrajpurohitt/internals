@@ -1040,12 +1040,6 @@ async function fetchCustomFeed(
       linkRegex: /href="(\/research\/[a-z0-9-]+)"/gi,
       categoryHint: "AI & Machine Learning",
     },
-    mistral: {
-      listingUrl: "https://mistral.ai/news/",
-      baseUrl: "https://mistral.ai",
-      linkRegex: /href="(\/news\/[a-z0-9-]+)"/gi,
-      categoryHint: "AI & Machine Learning",
-    },
     clickhouse: {
       listingUrl: "https://clickhouse.com/blog",
       baseUrl: "https://clickhouse.com",

@@ -202,12 +202,6 @@ async function handleSync(req: NextRequest) {
       feed_url: "https://www.fastly.com/blog_rss.xml",
     },
     {
-      name: "Mistral AI",
-      slug: "mistral",
-      website_url: "https://mistral.ai/news/",
-      feed_url: "custom:mistral",
-    },
-    {
       name: "CrowdStrike",
       slug: "crowdstrike",
       website_url: "https://www.crowdstrike.com/blog/",

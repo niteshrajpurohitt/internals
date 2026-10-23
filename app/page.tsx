@@ -14,19 +14,24 @@ export default async function HomePage() {
 
   return (
     <main className="flex min-h-screen flex-col justify-between">
-      <Container className="pt-16 pb-12 sm:pt-24">
-        {/* Hero Section: Linear-Style Minimal Header */}
-        <header className="mb-12 space-y-4 sm:mb-16">
-          {/* High-Contrast Hero Title */}
-          <h1 className="text-3xl leading-tight font-semibold tracking-tight text-white sm:text-4xl lg:text-5xl">
-            Engineering Feed
+      <Container size="wide" className="pt-8 pb-12 sm:pt-10">
+        {/* CAD Blueprint Hero Section */}
+        <header className="cad-crosshair mb-8 border border-white/20 bg-black p-5 sm:p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/15 pb-2 font-mono text-[11px] text-white/50">
+            <div className="flex items-center gap-2">
+              <span className="border border-white/50 px-1.5 py-0.5 text-[10px] font-bold text-white uppercase">[ 01 ]</span>
+              <span className="tracking-wider">CURATED SYSTEMS ARCHITECTURE</span>
+            </div>
+            <span>|← 38 FEEDS ACTIVE →|</span>
+          </div>
+
+          <h1 className="mt-3.5 text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white">
+            Curated Systems Architecture
           </h1>
-          
-          {/* Crisp Subtitle */}
-          <p className="max-w-2xl text-sm leading-relaxed font-normal text-zinc-400 sm:text-base">
-            Curated architectural deep dives, production postmortems, and timeless classics from
-            tier-1 engineering teams. Distributed systems, AI compute, storage engines, compilers,
-            and modern web platforms.
+
+          <p className="mt-2 max-w-2xl text-xs sm:text-sm leading-relaxed text-white/70">
+            Architectural deep dives, production postmortems, and distributed systems classics from
+            38 tier-1 engineering teams. Zero marketing fluff, direct outward canonical links.
           </p>
         </header>
 

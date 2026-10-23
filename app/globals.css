@@ -10,56 +10,89 @@
 }
 
 :root {
-  --background: #09090b;
-  --foreground: #f4f4f5;
-  --card-bg: #121215;
-  --card-border: rgba(255, 255, 255, 0.08);
-  --card-border-hover: rgba(255, 255, 255, 0.18);
+  --background: #000000;
+  --foreground: #ffffff;
+  --cad-line: rgba(255, 255, 255, 0.2);
+  --cad-line-bright: rgba(255, 255, 255, 0.85);
+  --cad-guide: rgba(255, 255, 255, 0.04);
 }
 
 body {
-  background-color: #09090b;
-  color: #f4f4f5;
+  background-color: #000000;
+  color: #ffffff;
   font-family: var(--font-sans);
   min-height: 100vh;
-  selection-background-color: #27272a;
-  selection-color: #fafafa;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 32px 32px;
 }
 
 ::selection {
-  background: #27272a;
-  color: #ffffff;
+  background: #ffffff;
+  color: #000000;
 }
 
-/* Subtle grid texture */
-.bg-grid-pattern {
-  background-size: 32px 32px;
-  background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+/* CAD Crosshair Corner Markers */
+.cad-crosshair {
+  position: relative;
 }
 
-/* Linear-style radial glow */
-.hero-radial-glow {
-  background: radial-gradient(
-    circle 600px at 50% -100px,
-    rgba(120, 119, 198, 0.12),
-    transparent 70%
-  );
+.cad-crosshair::before,
+.cad-crosshair::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  pointer-events: none;
+}
+
+.cad-crosshair::before {
+  top: -1px;
+  left: -1px;
+  border-top: 1px solid rgba(255, 255, 255, 0.85);
+  border-left: 1px solid rgba(255, 255, 255, 0.85);
+}
+
+.cad-crosshair::after {
+  bottom: -1px;
+  right: -1px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.85);
+  border-right: 1px solid rgba(255, 255, 255, 0.85);
+}
+
+/* Subtle CAD Dimension Ticker */
+.cad-dim-line {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.45);
+  text-transform: uppercase;
+}
+
+.cad-dim-line::before,
+.cad-dim-line::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background-color: rgba(255, 255, 255, 0.15);
 }
 
 /* Smooth scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: #000000;
 }
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
-  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: rgba(255, 255, 255, 0.4);
 }

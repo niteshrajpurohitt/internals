@@ -10,7 +10,7 @@ export function Container({ children, className, size = "default", ...props }: C
   const sizeMap = {
     narrow: "max-w-3xl",
     default: "max-w-4xl",
-    wide: "max-w-5xl",
+    wide: "max-w-6xl",
   };
 
   return (

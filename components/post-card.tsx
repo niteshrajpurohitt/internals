@@ -148,8 +148,6 @@ const COMPANY_ACCENTS: Record<string, string> = {
 
 export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
   const companyName = post.company?.name || post.companies?.name || "Engineering";
-  const companySlug = (post.company?.slug || post.companies?.slug || "general").toLowerCase();
-  const accentDotClass = COMPANY_ACCENTS[companySlug] || "bg-zinc-400";
   const canonicalSection = resolveCanonicalSection(post.tags);
   const isClassic = post.tags.some((t) => t.toLowerCase() === "classics");
   const isPostmortem = post.tags.some(
@@ -158,129 +156,97 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{ duration: 0.25, delay: Math.min(index * 0.04, 0.3) }}
-      className="group relative"
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.2, delay: Math.min(index * 0.03, 0.25) }}
+      className="group cad-crosshair relative flex flex-col justify-between border border-white/25 bg-black p-4.5 transition-all duration-150 hover:border-white sm:p-5"
     >
       <a
         href={post.source_url}
         target="_blank"
         rel="noopener noreferrer"
-        className="block rounded-xl border border-white/[0.08] bg-[#121215]/80 p-5 transition-all duration-200 hover:border-zinc-700/90 hover:bg-[#16161a] hover:shadow-[0_4px_24px_rgba(0,0,0,0.4)] focus:outline-none focus-visible:ring-1 focus-visible:ring-zinc-400 sm:p-6"
+        className="flex flex-1 flex-col focus:outline-none focus-visible:ring-1 focus-visible:ring-white"
       >
-        {/* Header Row: Company Pill & Relative Time */}
-        <div className="mb-3 flex items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-zinc-950/60 px-2.5 py-1 text-zinc-300">
-              <span className={`h-1.5 w-1.5 rounded-full ${accentDotClass}`} />
-              <span className="font-medium text-zinc-200">{companyName}</span>
-              <span className="font-mono text-zinc-600">•</span>
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onSelectCategory?.(canonicalSection);
-                }}
-                className="cursor-pointer text-[11px] text-zinc-400 transition-colors hover:text-white"
-                title={`Filter by ${canonicalSection}`}
-              >
-                {canonicalSection}
-              </button>
-            </div>
+        {/* Header Dimension Row: Company, Time, Status, Launch Icon */}
+        <div className="flex items-center justify-between gap-2 border-b border-white/15 pb-2.5 font-mono text-xs">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="border border-white/60 bg-black px-2 py-0.5 text-[11px] font-bold tracking-wider text-white uppercase">
+              {companyName}
+            </span>
+
+            <span className="text-white/40">·</span>
+
+            <span className="text-[10px] text-white/60">
+              {getRelativeTime(post.published_at)}
+            </span>
 
             {isPostmortem && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onSelectCategory?.("Postmortems");
-                }}
-                className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-rose-500/30 bg-rose-500/10 px-2 py-0.5 text-[10px] font-medium text-rose-300 transition-all hover:border-rose-400 hover:bg-rose-500/20"
-                title="Filter by Postmortems"
-              >
-                <AlertTriangle className="h-2.5 w-2.5 text-rose-400" />
-                <span>Postmortem</span>
-              </button>
+              <span className="border border-red-500/80 bg-red-950/40 px-1.5 py-0.5 text-[10px] font-bold text-red-400">
+                [ POSTMORTEM ]
+              </span>
             )}
 
             {isClassic && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onSelectCategory?.("Classics");
-                }}
-                className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-300 transition-all hover:border-amber-400 hover:bg-amber-500/20"
-                title="Filter by Classics"
-              >
-                <Bookmark className="h-2.5 w-2.5 fill-amber-300/30 text-amber-300" />
-                <span>Classic</span>
-              </button>
+              <span className="border border-amber-500/80 bg-amber-950/40 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
+                [ CLASSIC ]
+              </span>
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 font-mono text-[11px] text-zinc-500">
-            <span>{getRelativeTime(post.published_at)}</span>
-          </div>
-        </div>
-
-        {/* Title & Outward Link Icon */}
-        <div className="flex items-start justify-between gap-4">
-          <h2 className="text-base leading-snug font-medium tracking-tight text-zinc-100 transition-colors duration-150 group-hover:text-white sm:text-lg">
-            {post.title}
-          </h2>
-          <div className="shrink-0 pt-0.5">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-md text-zinc-500 transition-all duration-150 group-hover:bg-white/[0.06] group-hover:text-zinc-200">
-              <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono text-[9px] text-white/30 hidden sm:inline">|← LAUNCH →|</span>
+            <span className="flex h-5 w-5 items-center justify-center border border-white/40 bg-black text-white/70 transition-all duration-150 group-hover:border-white group-hover:bg-white group-hover:text-black">
+              <ArrowUpRight className="h-3 w-3" />
             </span>
           </div>
         </div>
 
-        {/* 1-2 sentence crisp technical takeaway */}
-        <p className="mt-2.5 line-clamp-2 text-sm leading-relaxed font-normal text-zinc-400">
-          {post.summary}
-        </p>
+        {/* Title */}
+        <h2 className="mt-3 text-[15px] font-semibold leading-snug tracking-tight text-white transition-colors group-hover:text-white/90 sm:text-base">
+          {post.title}
+        </h2>
 
-        {/* Footer: Tags & Read Time */}
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.04] pt-3">
-          <div className="flex flex-wrap items-center gap-1.5">
-            {post.tags.map((tag) => {
-              const isTagClassic = tag.toLowerCase() === "classics";
-              const targetSection = isTagClassic ? "Classics" : resolveCanonicalSection([tag]);
-              return (
-                <button
-                  key={tag}
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onSelectCategory?.(targetSection);
-                  }}
-                  className={`inline-flex cursor-pointer items-center gap-0.5 rounded border px-2 py-0.5 font-mono text-[11px] transition-all ${
-                    isTagClassic
-                      ? "border-amber-500/30 bg-amber-500/10 text-amber-300 font-medium hover:border-amber-400 hover:bg-amber-500/20"
-                      : "border-white/[0.06] bg-zinc-950/50 text-zinc-400 hover:border-zinc-500 hover:bg-zinc-900 hover:text-zinc-200"
-                  }`}
-                  title={`Filter by ${targetSection}`}
-                >
-                  <Hash className={`h-2.5 w-2.5 ${isTagClassic ? "text-amber-400" : "text-zinc-600"}`} />
-                  {isTagClassic ? "★ Classics" : tag}
-                </button>
-              );
-            })}
+        {/* CAD Blueprint Takeaway Sub-Box */}
+        <div className="mt-3 border border-white/20 bg-white/[0.02] p-3 text-xs leading-relaxed text-white/80">
+          <div className="cad-dim-line mb-1.5">
+            <span>|← TECHNICAL TAKEAWAY →|</span>
           </div>
+          <p className="line-clamp-2 text-white/75">{post.summary}</p>
+        </div>
+      </a>
 
-          <div className="flex shrink-0 items-center gap-1.5 font-mono text-xs text-zinc-500">
-            <Clock className="h-3 w-3 text-zinc-600" />
+      {/* Footer Dimension Row: Tags, Scale, Read Time */}
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/15 pt-2.5 font-mono text-[11px]">
+        <div className="flex flex-wrap items-center gap-1.5">
+          {post.tags.map((tag) => {
+            const isTagClassic = tag.toLowerCase() === "classics";
+            const targetSection = isTagClassic ? "Classics" : resolveCanonicalSection([tag]);
+            return (
+              <button
+                key={tag}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onSelectCategory?.(targetSection);
+                }}
+                className="cursor-pointer border border-white/20 bg-black px-1.5 py-0.5 text-[10px] text-white/70 transition-colors hover:border-white hover:text-white"
+              >
+                #{tag}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-3 text-white/50">
+          <span className="hidden text-[9px] text-white/30 sm:inline">[ SCALE 1:1 ]</span>
+          <div className="flex items-center gap-1 text-[10px]">
+            <Clock className="h-3 w-3 text-white/40" />
             <span>{post.read_time}</span>
           </div>
         </div>
-      </a>
+      </div>
     </motion.article>
   );
 }

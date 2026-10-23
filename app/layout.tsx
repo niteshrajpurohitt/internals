@@ -15,7 +15,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Internals — Engineering Blogs, Without the Noise",
-  description: "Skip checking dozens of company sites individually. Deep dives across domains from tier-1 engineering teams, all in one place.",
+  description: "Skip checking dozens of company sites individually. Technical deep dives from top engineering teams, all in one place.",
   keywords: [
     "internals",
     "engineering blogs",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Internals — Engineering Blogs, Without the Noise",
     description:
-      "Skip checking dozens of company sites individually. Deep dives across domains from tier-1 engineering teams, all in one place.",
+      "Skip checking dozens of company sites individually. Technical deep dives from top engineering teams, all in one place.",
     type: "website",
   },
 };

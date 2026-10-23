@@ -19,7 +19,7 @@ const TITLE_VETO_PATTERNS: RegExp[] = [
   /\b[a-zA-Z0-9\s]+\s+[0-9]+\.[0-9]+\s+(is\s+)?now available\b/i,
 
   // Product / Feature Launch Announcements & Changelogs
-  /^(announcing|introducing|meet|welcome to|new in)\s+[\w\s]+(dashboard|console|ui|portal|pricing|gateway|tier|service|feature|lens|scim|read replicas)\b/i,
+  /^(announcing|introducing|meet|welcome to|new in)\s+[\w\s.-]+(dashboard|console|ui|portal|pricing|gateway|tier|service|feature|lens|scim|read replicas|specs|lead)\b/i,
   /\b(what's new in|monthly roundup|weekly roundup|quarterly update|product update|changelog|release notes)\b/i,
   /\b(this release (targets|introduces|brings|adds|fixes))\b/i,
   /^v?[0-9]+\.[0-9]+/i,
@@ -29,8 +29,8 @@ const TITLE_VETO_PATTERNS: RegExp[] = [
   /release\s+changelog/i,
 
   // Corporate PR, Deal Announcements, Partnerships & Funding
-  /\b(partner(s|ed|ing)?\s+(with|for)|partnership with|join forces|teams? up with|teaming up with|\bx\s+[A-Z][a-zA-Z0-9]+)\b/i,
-  /\b(strategic partnership|content partnership|partner network|commercial agreement|strategic alliance|enterprise agreement|sovereign enterprise)\b/i,
+  /\b(partner(s|ed|ing)?\s+(with|for|to)|partnership\s+(with|to|for)|join forces|teams? up with|teaming up with|\bx\s+[A-Z][a-zA-Z0-9]+)\b/i,
+  /\b(strategic partnership|content partnership|partner network|commercial agreement|strategic alliance|enterprise agreement|sovereign enterprise|for enterprise|for enterprise apps)\b/i,
   /\b(opens?|opening|new)\s+([a-zA-Z\s]+)?(hub|office|headquarters|campus|center|centre)\b/i,
   /\b(series\s+[a-f]|funding round|valuation|ipo|seed round|venture round|capital raised)\b/i,
   /\b(appointed as|joins as|executive team|welcoming our new|hires? as|c-suite)\b/i,
@@ -46,12 +46,12 @@ const TITLE_VETO_PATTERNS: RegExp[] = [
   /\b(gambling spam network|political commenting network|disrupting malicious uses of ai)\b/i,
 
   // Customer Marketing, Promotional & Sales Case Studies
-  /^how\s+[\w\s]+\s+(is using|uses|scales with|transforms|reimagines|chose|accelerates with)\s+/i,
+  /^how\s+(?!we\b|discord\b|stripe\b|shopify\b|uber\b|canva\b|tailscale\b|linkedin\b)[\w\s.-]+\s+(is using|uses|scales with|transforms|reimagines|chose|accelerates with|ships|serves|runs|replaced|migrated to\s+[A-Z])\b/i,
   /\b(customer story|customer spotlight|customer success|client story|case study)\b/i,
-  /\b(pricing change|price update|discount|lower pricing|reduced pricing|cutting\s+.*prices|price reduction|new pricing|price decrease|price increase|black friday|cyber monday)\b/i,
+  /\b(pricing change|price update|discount|lower pricing|reduced pricing|cutting\s+.*prices|price reduction|new pricing|price decrease|price increase|black friday|cyber monday|\$[0-9]+\s+metal)\b/i,
 
   // Events, Conferences, Talks, Webinars & Podcasts
-  /\b(webinar|conference recap|visit our booth|fireside chat|panel discussion|roundtable|watch the recording|podcast episode)\b/i,
+  /\b(webinar|conference recap|visit our booth|fireside chat|panel discussion|roundtable|watch the recording|podcast episode|ship\s+202[0-9]\s+recap|p99 conf|summit)\b/i,
   /\b(named a leader in gartner|forrester wave|magic quadrant)\b/i,
   /\b(intern spotlight|life at\s+[A-Z]|meet the team|employee spotlight|we are hiring)\b/i,
 ];

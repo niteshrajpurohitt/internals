@@ -46,14 +46,16 @@ const TITLE_VETO_PATTERNS: RegExp[] = [
   /\b(gambling spam network|political commenting network|disrupting malicious uses of ai)\b/i,
 
   // Customer Marketing, Promotional & Sales Case Studies
-  /^how\s+(?!we\b|discord\b|stripe\b|shopify\b|uber\b|canva\b|tailscale\b|linkedin\b)[\w\s.-]+\s+(is using|uses|scales with|transforms|reimagines|chose|accelerates with|ships|serves|runs|replaced|migrated to\s+[A-Z])\b/i,
+  /^how\s+(?!we\b|openai\b|discord\b|stripe\b|shopify\b|uber\b|canva\b|tailscale\b|linkedin\b|turbopack\b|turborepo\b|v0\b|linear\b|scylladb\b|clickhouse\b|supabase\b|cockroachdb\b|datadog\b|netflix\b|meta\b|aws\b|cloudflare\b|fastly\b|crowdstrike\b|github\b|gitlab\b|atlassian\b|migrating\b)[\w\s.-]+\s+(shipped|grew|delivers|powers|moved|built|scaled|protects|runs|uses|is using|transforms|accelerates with|chose|improved|reimagines|streamlines|replaces|replaced|modernizes)\b/i,
   /\b(customer story|customer spotlight|customer success|client story|case study)\b/i,
-  /\b(pricing change|price update|discount|lower pricing|reduced pricing|cutting\s+.*prices|price reduction|new pricing|price decrease|price increase|black friday|cyber monday|\$[0-9]+\s+metal)\b/i,
+  /\b(pricing change|price update|discount|lower pricing|reduced pricing|cutting\s+.*prices|price reduction|new pricing|price decrease|price increase|black friday|cyber monday|\$[0-9]+\s+metal|improved infrastructure pricing)\b/i,
+  /\b(training subscription|ai competency|university course|rust shop|20% sale|store sale|sale on most items|merch)\b/i,
+  /\b(acquires|acquisition of|joins [a-zA-Z]+ to accelerate)\b/i,
 
   // Events, Conferences, Talks, Webinars & Podcasts
-  /\b(webinar|conference recap|visit our booth|fireside chat|panel discussion|roundtable|watch the recording|podcast episode|ship\s+202[0-9]\s+recap|p99 conf|summit)\b/i,
-  /\b(named a leader in gartner|forrester wave|magic quadrant)\b/i,
-  /\b(intern spotlight|life at\s+[A-Z]|meet the team|employee spotlight|we are hiring)\b/i,
+  /\b(webinar|conference recap|visit our booth|fireside chat|panel discussion|roundtable|watch the recording|podcast episode|ship\s+202[0-9]\s+recap|p99 conf|summit.*retrospective|summit.*preview|roachfest|conference preview|security roundup)\b/i,
+  /\b(named a leader in gartner|forrester wave|magic quadrant|gartner.*report)\b/i,
+  /\b(intern spotlight|life at\s+[A-Z]|meet the team|employee spotlight|cx spotlight|why i joined|we are hiring)\b/i,
 ];
 
 // 2. High-Confidence Content-Only Vetoes: applied to body summary to reject non-technical articles without false-vetoing technical posts
@@ -452,6 +454,20 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "ai agent",
     "ai agents",
     "artificial intelligence",
+    "foundation model",
+    "foundation models",
+    "mcp",
+    "speech-to-text",
+    "text-to-speech",
+    "multimodal",
+    "evals",
+    "prompt engineering",
+    "genai",
+    "generative ai",
+    "recommendation",
+    "recommendations",
+    "personalization",
+    "search ranking",
   ],
   "Distributed Systems": [
     "distributed system",
@@ -499,6 +515,9 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "horizontally scaling",
     "distributed lock",
     "sharding",
+    "viewstamped replication",
+    "leader leases",
+    "service discovery",
   ],
   "Databases & Storage": [
     "postgres",
@@ -538,6 +557,14 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "read replica",
     "replicas",
     "data warehouse",
+    "object storage",
+    "blob storage",
+    "filesystem",
+    "s3",
+    "write-ahead log",
+    "wal",
+    "indexes",
+    "indexing",
   ],
   "Infrastructure & Cloud": [
     "kubernetes",
@@ -573,6 +600,21 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "tracing",
     "sandbox",
     "microvm",
+    "vulnerability",
+    "vulnerabilities",
+    "cve",
+    "rce",
+    "security",
+    "waf",
+    "firewall",
+    "routing",
+    "router",
+    "gateway",
+    "tls",
+    "ssl",
+    "reverse proxy",
+    "backbone",
+    "datacenter",
   ],
   "Low-Level & Compilers": [
     "rust",
@@ -610,6 +652,17 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "io_uring",
     "epoll",
     "cache locality",
+    "systems programming",
+    "memory safety",
+    "syscall",
+    "syscalls",
+    "operating system",
+    "os",
+    "firmware",
+    "driver",
+    "drivers",
+    "freebsd",
+    "bare-metal",
   ],
   "Web & Platforms": [
     "frontend",
@@ -656,6 +709,10 @@ const CATEGORY_KEYWORDS: Record<string, string[]> = {
     "tailwind",
     "accessibility",
     "pwa",
+    "node",
+    "nodejs",
+    "python",
+    "backend",
   ],
 };
 
@@ -664,6 +721,7 @@ function escapeRegex(str: string): string {
 }
 
 function matchesKeyword(text: string, kw: string): boolean {
+  if (!text) return false;
   const escaped = escapeRegex(kw.toLowerCase());
   const prefix = /^[a-z0-9]/i.test(kw) ? "\\b" : "(?:^|\\s|[^a-zA-Z0-9])";
   const suffix = /[a-z0-9]$/i.test(kw) ? "\\b" : "(?:$|\\s|[^a-zA-Z0-9])";
@@ -679,7 +737,7 @@ export function detectCategories(
   const detectedTags = new Set<string>();
 
   // Strictly preserve 'Classics' and 'Postmortems' tags
-  if (existingTags.some((t) => t.toLowerCase() === "classics")) {
+  if (existingTags.some((t) => t.toLowerCase() === "classics" || t.toLowerCase() === "★ classics")) {
     detectedTags.add("Classics");
   }
   if (existingTags.some((t) => t.toLowerCase() === "postmortems" || t.toLowerCase() === "postmortem")) {
@@ -698,7 +756,7 @@ export function detectCategories(
   }
 
   // Score match count per category:
-  // Title matches are weighted 3x (+3 points) vs Body matches (+1 point)
+  // Title matches are weighted 5x (+5 points) vs Summary matches (+1 point)
   // to ensure the primary subject of the article always dictates the category.
   const categoryScores: { category: string; score: number }[] = [];
 
@@ -706,7 +764,7 @@ export function detectCategories(
     let score = 0;
     for (const kw of keywords) {
       if (matchesKeyword(title, kw)) {
-        score += 3;
+        score += 5;
       }
       if (matchesKeyword(summary, kw)) {
         score += 1;
@@ -720,12 +778,29 @@ export function detectCategories(
   // Sort categories by highest match score first
   categoryScores.sort((a, b) => b.score - a.score);
 
-  // Take top 1 or 2 matching categories
-  for (const item of categoryScores.slice(0, 2)) {
-    detectedTags.add(item.category);
+  // Take top category, and add second only if score is strong (>= 5) and >= topScore * 0.5
+  if (categoryScores.length > 0) {
+    const topScore = categoryScores[0].score;
+    detectedTags.add(categoryScores[0].category);
+    if (
+      categoryScores.length > 1 &&
+      categoryScores[1].score >= 5 &&
+      categoryScores[1].score >= topScore * 0.5
+    ) {
+      detectedTags.add(categoryScores[1].category);
+    }
+  } else {
+    // Preserve existing valid technical pillar or fallback
+    const validPillars = Object.keys(CATEGORY_KEYWORDS);
+    const existingPillars = existingTags.filter((t) => validPillars.includes(t));
+    if (existingPillars.length > 0) {
+      existingPillars.slice(0, 2).forEach((p) => detectedTags.add(p));
+    } else {
+      detectedTags.add("Infrastructure & Cloud");
+    }
   }
 
-  // Include 1-2 specific keyword chips if found in title or summary
+  // Include specific keyword chips ONLY if explicitly present in the TITLE
   const specificSignals = [
     "Rust",
     "eBPF",
@@ -734,7 +809,6 @@ export function detectCategories(
     "PostgreSQL",
     "ClickHouse",
     "Kafka",
-    "Distributed Systems",
     "WebAssembly",
     "CRDT",
     "Linux Kernel",
@@ -742,7 +816,7 @@ export function detectCategories(
     "Vitess",
   ];
   for (const sig of specificSignals) {
-    if (matchesKeyword(title, sig) || matchesKeyword(summary, sig)) {
+    if (matchesKeyword(title, sig)) {
       detectedTags.add(sig);
     }
   }
@@ -868,8 +942,13 @@ export async function fetchAndParseFeed(
 
     for (const item of feed.items) {
       const title = cleanTitle(item.title || "");
-      const link = (item.link || "").trim();
+      let link = (item.link || "").trim();
       if (!title || !link || !link.startsWith("http")) continue;
+
+      // Normalize any relative CMS host errors (e.g. Cockroach Labs local RSS generator)
+      if (link.startsWith("http://localhost:3000")) {
+        link = link.replace("http://localhost:3000", "https://www.cockroachlabs.com");
+      }
 
       // Quality filter 0: Fast URL veto - reject changelog, release notes, press, announcements
       const lowerLink = link.toLowerCase();
@@ -908,7 +987,7 @@ export async function fetchAndParseFeed(
         summary = `${title} — Architectural analysis and technical engineering implementation details.`;
       }
 
-      const tags = detectCategories(title, rawContent, item.categories || []);
+      const tags = detectCategories(title, summary, item.categories || []);
       if (!tags || tags.length === 0) {
         continue;
       }

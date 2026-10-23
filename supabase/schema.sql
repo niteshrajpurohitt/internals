@@ -115,7 +115,8 @@ INSERT INTO public.companies (name, slug, website_url, feed_url) VALUES
 ('Google Research', 'google', 'https://research.google/blog/', 'https://research.google/blog/rss/'),
 ('Hugging Face', 'huggingface', 'https://huggingface.co/blog', 'https://huggingface.co/blog/feed.xml'),
 ('CrowdStrike', 'crowdstrike', 'https://www.crowdstrike.com/blog/', NULL),
-('GitLab', 'gitlab', 'https://about.gitlab.com/blog/', NULL)
+('GitLab', 'gitlab', 'https://about.gitlab.com/blog/', NULL),
+('Fastly', 'fastly', 'https://www.fastly.com/blog', 'https://www.fastly.com/blog/feed.xml')
 ON CONFLICT (slug) DO UPDATE SET
     name = EXCLUDED.name,
     website_url = EXCLUDED.website_url,
@@ -428,5 +429,93 @@ SELECT
     '10 min read',
     '2017-03-02 12:00:00+00'::timestamptz
 FROM public.companies c WHERE c.slug = 'aws'
+ON CONFLICT (source_url) DO NOTHING;
+
+INSERT INTO public.posts (
+    company_id, 
+    title, 
+    slug, 
+    source_url, 
+    summary, 
+    tags, 
+    read_time, 
+    published_at
+)
+SELECT 
+    c.id,
+    'Online Migrations at Scale',
+    'stripe-online-migrations-at-scale',
+    'https://stripe.com/blog/online-migrations-at-scale',
+    'The industry-defining 4-phase playbook for safely refactoring mission-critical database schemas with zero downtime. Explores dual-writing, parallel snapshot backfilling, and shadow-reading verification across hundreds of millions of payment objects.',
+    ARRAY['Classics', 'Databases & Storage', 'Distributed Systems'],
+    '8 min read',
+    '2017-02-02 12:00:00+00'::timestamptz
+FROM public.companies c WHERE c.slug = 'stripe'
+ON CONFLICT (source_url) DO NOTHING;
+
+INSERT INTO public.posts (
+    company_id, 
+    title, 
+    slug, 
+    source_url, 
+    summary, 
+    tags, 
+    read_time, 
+    published_at
+)
+SELECT 
+    c.id,
+    'Deconstructing the Monolith: Designing a Modular Monolith at Shopify',
+    'shopify-deconstructing-modular-monolith',
+    'https://shopify.engineering/deconstructing-the-monolith-designing-a-modular-monolith-at-shopify',
+    'How Shopify survived the microservice hype by re-architecting their 15-year-old Ruby on Rails monolith into an isolated modular system. Details domain boundaries, dependency graphs, and AST-level static validation that powers millions of merchant storefronts.',
+    ARRAY['Classics', 'Web & Platforms', 'Distributed Systems'],
+    '10 min read',
+    '2019-09-04 12:00:00+00'::timestamptz
+FROM public.companies c WHERE c.slug = 'shopify'
+ON CONFLICT (source_url) DO NOTHING;
+
+INSERT INTO public.posts (
+    company_id, 
+    title, 
+    slug, 
+    source_url, 
+    summary, 
+    tags, 
+    read_time, 
+    published_at
+)
+SELECT 
+    c.id,
+    'Details of the Cloudflare Outage on July 2, 2019: Catastrophic Backtracking in Regular Expressions',
+    'cloudflare-catastrophic-backtracking-regex-outage-2019',
+    'https://blog.cloudflare.com/details-of-the-cloudflare-outage-on-july-2-2019/',
+    'The definitive postmortem of how a single WAF regular expression with catastrophic backtracking (.*.*=.*) triggered 100% CPU exhaustion across Cloudflare''s global edge network, dropping 82% of customer traffic worldwide.',
+    ARRAY['Postmortems', 'Infrastructure & Cloud', 'Networking'],
+    '11 min read',
+    '2019-07-02 21:00:00+00'::timestamptz
+FROM public.companies c WHERE c.slug = 'cloudflare'
+ON CONFLICT (source_url) DO NOTHING;
+
+INSERT INTO public.posts (
+    company_id, 
+    title, 
+    slug, 
+    source_url, 
+    summary, 
+    tags, 
+    read_time, 
+    published_at
+)
+SELECT 
+    c.id,
+    'Summary of June 8, 2021 Global Service Disruption',
+    'fastly-global-service-disruption-june-8-2021',
+    'https://www.fastly.com/blog/summary-of-june-8-outage/',
+    'How a dormant software bug inside Fastly''s Varnish cache was triggered by a single valid customer configuration update, causing 85% of their global CDN fleet to return 503 errors and taking down Reddit, Twitch, and GitHub.',
+    ARRAY['Postmortems', 'Infrastructure & Cloud', 'Networking'],
+    '9 min read',
+    '2021-06-08 18:00:00+00'::timestamptz
+FROM public.companies c WHERE c.slug = 'fastly'
 ON CONFLICT (source_url) DO NOTHING;
 

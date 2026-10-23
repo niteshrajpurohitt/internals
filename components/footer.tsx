@@ -40,7 +40,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="https://github.com/niteshrajpurohitt/techfeed"
+                  href="https://github.com/niteshrajpurohitt/internals"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 transition-colors hover:text-white"

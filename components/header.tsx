@@ -35,9 +35,9 @@ export function Header() {
             className="flex items-center gap-2 text-sm font-semibold tracking-tight text-white transition-opacity hover:opacity-85"
           >
             <span className="flex h-6 w-6 items-center justify-center border border-white bg-black font-mono text-xs font-bold text-white shadow-xs">
-              ef
+              IN
             </span>
-            <span className="font-mono text-sm font-bold tracking-tight">engfeed</span>
+            <span className="font-mono text-sm font-bold tracking-tight">Internals</span>
           </Link>
         </div>
 

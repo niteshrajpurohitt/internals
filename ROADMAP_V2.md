@@ -1,6 +1,6 @@
-# engfeed — Product & Engineering Roadmap (v2)
+# Internals — Product & Engineering Roadmap (v2)
 
-This document tracks planned features, architectural requirements, and design specifications for **engfeed v2**.
+This document tracks planned features, architectural requirements, and design specifications for **Internals v2**.
 
 ---
 
@@ -55,12 +55,12 @@ This document tracks planned features, architectural requirements, and design sp
 
 ## 3. Developer Ergonomics & Distribution
 
-### 3.1 Terminal CLI (`npx engfeed`)
+### 3.1 Terminal CLI (`npx internals-cli` or `npx internals`)
 - Command-line tool to view the top 5 architectural deep dives directly in any terminal:
   ```bash
-  npx engfeed
-  npx engfeed --category distributed
-  npx engfeed --top
+  npx internals
+  npx internals --category distributed
+  npx internals --top
   ```
 - Uses ink/chalk to render clickable links and ANSI color-coded company tags.
 
@@ -68,7 +68,7 @@ This document tracks planned features, architectural requirements, and design sp
 - Next.js dynamic OG generator creating 1200x630 dark-mode preview cards for Twitter, LinkedIn, and Slack sharing.
 
 ### 3.3 Aggregator RSS Feed (`/feed.xml`)
-- Public curated RSS endpoint allowing developers to subscribe to `engfeed` inside Feedly, NetNewsWire, or Readwise Reader.
+- Public curated RSS endpoint allowing developers to subscribe to `Internals` inside Feedly, NetNewsWire, or Readwise Reader.
 
 ---
 

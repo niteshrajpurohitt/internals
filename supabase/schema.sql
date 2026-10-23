@@ -1,5 +1,5 @@
 -- ==============================================================================
--- engfeed — Supabase SQL Migration Script
+-- Internals — Supabase SQL Migration Script
 -- Production-ready schema with RLS policies and 25 Tier-1 Engineering Companies
 -- ==============================================================================
 

@@ -15,12 +15,12 @@ export function Footer() {
           <div className="space-y-2 md:col-span-2">
             <div className="flex items-center gap-2 font-bold text-white">
               <span className="flex h-5 w-5 items-center justify-center border border-white bg-black text-[10px]">
-                ef
+                IN
               </span>
-              <span className="tracking-wider uppercase">engfeed Index</span>
+              <span className="tracking-wider uppercase">Internals Index</span>
             </div>
             <p className="max-w-lg leading-relaxed text-white/60 font-sans text-xs">
-              engfeed indexes public engineering blogs to direct discovery traffic to original authors. We do
+              Internals indexes public engineering blogs to direct discovery traffic to original authors. We do
               not mirror or paywall full article content; each entry links directly out to canonical publisher sources.
             </p>
           </div>
@@ -60,7 +60,7 @@ export function Footer() {
             <span>|← ALL FEEDS OPERATIONAL • 38 REPOSITORIES LIVE →|</span>
           </div>
 
-          <p>© {new Date().getFullYear()} engfeed. Built for engineering teams.</p>
+          <p>© {new Date().getFullYear()} Internals. Built for engineering teams.</p>
         </div>
       </Container>
 
@@ -82,7 +82,7 @@ export function Footer() {
             </div>
 
             <p className="mb-4 text-xs leading-relaxed text-white/70 font-sans">
-              engfeed strictly operates as a directory and discovery platform. We link directly to
+              Internals strictly operates as a directory and discovery platform. We link directly to
               canonical publisher URLs and do not store or scrape original full-text articles.
             </p>
 
@@ -92,9 +92,9 @@ export function Footer() {
             </p>
 
             <div className="flex items-center justify-between border border-white/30 bg-black p-3">
-              <span className="font-mono text-xs text-white">legal@engfeed.dev</span>
+              <span className="font-mono text-xs text-white">legal@internals.dev</span>
               <a
-                href="mailto:legal@engfeed.dev?subject=Delist%20Request%20-%20engfeed"
+                href="mailto:legal@internals.dev?subject=Delist%20Request%20-%20Internals"
                 className="inline-flex items-center gap-1 border border-white bg-white px-2.5 py-1 text-xs text-black font-bold transition-colors hover:bg-black hover:text-white"
               >
                 <Mail className="h-3 w-3" />

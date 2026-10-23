@@ -4,7 +4,7 @@ const parser = new Parser({
   timeout: 10000,
   headers: {
     "User-Agent":
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 (engfeed-aggregator/1.0; +https://engfeed.dev)",
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 (internals-aggregator/1.0; +https://internals.dev)",
     Accept: "application/rss+xml, application/atom+xml, text/xml, application/xml, */*",
   },
 });
@@ -987,7 +987,7 @@ async function fetchCustomFeed(
   try {
     const res = await fetch(config.listingUrl, {
       headers: {
-        "User-Agent": "engfeed-aggregator/1.0 (+https://engfeed.dev; discovery engine)",
+        "User-Agent": "internals-aggregator/1.0 (+https://internals.dev; discovery engine)",
         Accept: "text/html,application/xhtml+xml",
       },
       next: { revalidate: 3600 },
@@ -1024,7 +1024,7 @@ async function fetchCustomFeed(
         try {
           const articleRes = await fetch(url, {
             headers: {
-              "User-Agent": "engfeed-aggregator/1.0 (+https://engfeed.dev; discovery engine)",
+              "User-Agent": "internals-aggregator/1.0 (+https://internals.dev; discovery engine)",
               Accept: "text/html",
             },
             signal: AbortSignal.timeout(6000),

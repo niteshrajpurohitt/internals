@@ -14,22 +14,25 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "engfeed — Technical Engineering Blog Aggregator",
-  description: "Curated architectural deep dives and systems design from tier-1 engineering teams.",
+  title: "Internals — Engineering Blogs, Without the Noise",
+  description: "Skip checking dozens of company sites individually. Deep dives across domains from tier-1 engineering teams, all in one place.",
   keywords: [
+    "internals",
     "engineering blogs",
     "systems design",
     "distributed systems",
+    "production postmortems",
+    "database internals",
+    "low-level systems",
     "infrastructure",
     "OpenAI engineering",
-    "Vercel architecture",
     "Cloudflare blog",
   ],
-  authors: [{ name: "engfeed" }],
+  authors: [{ name: "Internals" }],
   openGraph: {
-    title: "engfeed — Technical Engineering Blog Aggregator",
+    title: "Internals — Engineering Blogs, Without the Noise",
     description:
-      "Curated architectural deep dives and systems design from tier-1 engineering teams.",
+      "Skip checking dozens of company sites individually. Deep dives across domains from tier-1 engineering teams, all in one place.",
     type: "website",
   },
 };

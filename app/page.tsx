@@ -22,7 +22,7 @@ export default async function HomePage() {
           </h1>
 
           <p className="mt-2 max-w-2xl text-xs sm:text-sm leading-relaxed text-white/70">
-            Skip checking dozens of company sites individually. Technical deep dives from top engineering teams, all in one place. Links straight to the source.
+            Stop checking dozens of company sites individually for technical blogs. Deep dives from top engineering teams, all in one place. Links straight to the source.
           </p>
         </header>
 

@@ -18,12 +18,11 @@ export default async function HomePage() {
         {/* Hero Section */}
         <header className="cad-crosshair mb-8 border border-dashed border-white/25 bg-neutral-950 p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] sm:p-6">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white">
-            Curated Systems Architecture
+            Engineering Blogs, Without the Noise
           </h1>
 
           <p className="mt-2 max-w-2xl text-xs sm:text-sm leading-relaxed text-white/70">
-            Architectural deep dives, production postmortems, and distributed systems classics from
-            38 tier-1 engineering teams. Zero marketing fluff, direct outward canonical links.
+            Skip checking dozens of company sites individually. Deep dives across domains from tier-1 engineering teams, all in one place. Links straight to the source.
           </p>
         </header>
 

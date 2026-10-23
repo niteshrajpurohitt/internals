@@ -42,8 +42,8 @@ export function Header() {
         </div>
 
         {/* Blueprint CAD Search Bar */}
-        <div className="relative flex h-7 w-32 items-center border border-white/25 bg-black font-mono text-[11px] transition-colors focus-within:border-white">
-          <Search className="pointer-events-none ml-2 h-3 w-3 shrink-0 text-white/50" />
+        <div className="group relative flex h-7 w-32 items-center border border-white/20 bg-black font-mono text-[11px] transition-colors focus-within:border-white/55">
+          <Search className="pointer-events-none ml-2 h-3 w-3 shrink-0 text-white/50 transition-colors group-focus-within:text-white/80" />
           <input
             ref={inputRef}
             type="text"
@@ -55,8 +55,8 @@ export function Header() {
                 inputRef.current?.blur();
               }
             }}
-            placeholder="SEARCH"
-            className="h-full w-full bg-transparent px-1.5 text-[11px] text-white placeholder:text-white/40 focus:outline-none"
+            placeholder="SEARCH..."
+            className="h-full w-full bg-transparent px-1.5 text-[11px] text-white placeholder:text-white/40 transition-colors focus:placeholder:text-white/60 focus:outline-none"
           />
           {searchQuery && (
             <button

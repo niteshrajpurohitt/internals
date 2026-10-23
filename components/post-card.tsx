@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import { ArrowUpRight, Clock, Hash, Bookmark, AlertTriangle } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { PostWithCompany, CategoryFilter } from "@/lib/types";
 
 interface PostCardProps {
@@ -160,7 +160,7 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
       transition={{ duration: 0.2, delay: Math.min(index * 0.03, 0.25) }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group cad-crosshair relative flex flex-col justify-between border border-white/30 bg-neutral-950 p-4.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] transition-colors duration-150 hover:border-white sm:p-5"
+      className="group cad-crosshair relative flex flex-col justify-between border border-white/20 bg-neutral-950 p-4.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] transition-colors duration-150 hover:border-white/50 sm:p-5"
     >
       <a
         href={post.source_url}
@@ -170,7 +170,7 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
         onBlur={() => setIsHovered(false)}
         className="flex flex-1 flex-col focus:outline-none focus-visible:ring-1 focus-visible:ring-white"
       >
-        {/* Header Dimension Row: Company, Time, Status, Launch Icon */}
+        {/* Header Dimension Row: Company, Time, Read Time, Launch Icon */}
         <div className="flex items-center justify-between gap-2 border-b border-white/15 pb-2.5 font-mono text-xs">
           <div className="flex flex-wrap items-center gap-2">
             <span className="border border-white/60 bg-black px-2 py-0.5 text-[11px] font-bold tracking-wider text-white uppercase">
@@ -182,6 +182,15 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
             <span className="text-[10px] text-white/60">
               {getRelativeTime(post.published_at)}
             </span>
+
+            {post.read_time && (
+              <>
+                <span className="text-white/40">·</span>
+                <span className="text-[10px] text-white/50">
+                  {post.read_time}
+                </span>
+              </>
+            )}
           </div>
 
           <div className="flex items-center gap-1.5 pr-1.5 pt-1.5">
@@ -218,37 +227,6 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
           {post.summary}
         </p>
       </a>
-
-      {/* Footer Dimension Row: Tags, Scale, Read Time */}
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-white/15 pt-2.5 font-mono text-[11px]">
-        <div className="flex flex-wrap items-center gap-1.5">
-          {post.tags.map((tag) => {
-            const isTagClassic = tag.toLowerCase() === "classics";
-            const targetSection = isTagClassic ? "Classics" : resolveCanonicalSection([tag]);
-            return (
-              <button
-                key={tag}
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onSelectCategory?.(targetSection);
-                }}
-                className="cursor-pointer border border-white/20 bg-black px-1.5 py-0.5 text-[10px] text-white/70 transition-colors hover:border-white hover:text-white"
-              >
-                #{tag}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="flex items-center gap-3 text-white/50">
-          <div className="flex items-center gap-1 text-[10px]">
-            <Clock className="h-3 w-3 text-white/40" />
-            <span>{post.read_time}</span>
-          </div>
-        </div>
-      </div>
     </motion.article>
   );
 }

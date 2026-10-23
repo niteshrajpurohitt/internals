@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, X, RefreshCw, Check } from "lucide-react";
+import { Search, X, RefreshCw, Check, ChevronDown } from "lucide-react";
 import { PostWithCompany, Company, CategoryFilter } from "@/lib/types";
 import { interleavePostsByCompany } from "@/lib/supabase";
 import { PostCard } from "./post-card";
@@ -39,7 +39,6 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   const [isFiltering, setIsFiltering] = useState(false);
   const [currentTotalCount, setCurrentTotalCount] = useState<number | undefined>(totalCount);
@@ -144,23 +143,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     }
   };
 
-  // IntersectionObserver for automated infinite scroll
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && hasMore && !isLoadingMore && !isFiltering) {
-          loadMorePosts();
-        }
-      },
-      { rootMargin: "400px" }
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [hasMore, isLoadingMore, isFiltering, posts.length]);
 
   const handleSync = async () => {
     setIsSyncing(true);
@@ -207,7 +190,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     <div className="w-full space-y-6">
       {/* Search Bar & Company Filter Controls */}
       <div className="space-y-3">
-        <div className="cad-crosshair relative flex items-center border border-white/25 bg-black">
+        <div className="cad-crosshair relative flex items-center border border-dashed border-white/25 bg-black transition-colors focus-within:border-white/60">
           <Search className="pointer-events-none absolute left-4 h-4 w-4 text-white/50" />
           <input
             ref={searchInputRef}
@@ -221,11 +204,11 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               }
             }}
             placeholder="Search systems, architectures, algorithms, or companies..."
-            className="h-11 w-full bg-transparent pr-24 pl-11 text-sm text-white placeholder:text-white/40 focus:outline-none"
+            className="h-11 w-full bg-transparent pr-10 pl-11 text-sm text-white placeholder:text-white/40 focus:outline-none"
           />
 
-          <div className="absolute right-3 flex items-center gap-1.5">
-            {searchQuery && (
+          {searchQuery && (
+            <div className="absolute right-3 flex items-center">
               <button
                 onClick={() => setSearchQuery("")}
                 className="p-1 text-white/50 transition-colors hover:text-white"
@@ -233,30 +216,26 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               >
                 <X className="h-3.5 w-3.5" />
               </button>
-            )}
-
-            <span className="hidden items-center border border-white/20 bg-black px-1.5 py-0.5 font-mono text-[10px] text-white/60 sm:inline-flex">
-              [ ⌘K ]
-            </span>
-          </div>
+            </div>
+          )}
         </div>
 
         {/* Category Pills & Company Filter Row */}
         <div className="flex flex-col justify-between gap-3 pt-1 sm:flex-row sm:items-center">
-          <div className="no-scrollbar flex scrollbar-none items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 font-mono text-xs">
+          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 font-mono text-xs">
             {CATEGORIES.map((category) => {
               const isActive = selectedCategory === category;
               return (
                 <button
                   key={category}
                   onClick={() => setSelectedCategory(category)}
-                  className={`cursor-pointer border px-2.5 py-1 text-xs uppercase transition-colors duration-100 ${
+                  className={`inline-flex h-7 shrink-0 cursor-pointer items-center justify-center border px-3 text-xs uppercase whitespace-nowrap transition-colors duration-100 ${
                     isActive
-                      ? "border-white bg-white text-black font-bold"
+                      ? "border-white bg-white font-bold text-black"
                       : "border-white/20 bg-black text-white/70 hover:border-white/50 hover:text-white"
                   }`}
                 >
-                  {category === "Classics" ? "★ Classics" : category}
+                  {category}
                 </button>
               );
             })}
@@ -338,8 +317,8 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
         )}
       </div>
 
-      {/* Adaptive 2-Column CAD Grid */}
-      <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 lg:gap-5 transition-opacity duration-150 ${isFiltering ? "opacity-50" : "opacity-100"}`}>
+      {/* Single-Column List Feed */}
+      <div className={`flex flex-col space-y-3.5 transition-opacity duration-150 ${isFiltering ? "opacity-50" : "opacity-100"}`}>
         <AnimatePresence mode="popLayout">
           {posts.length > 0 ? (
             posts.map((post, idx) => (
@@ -358,7 +337,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
-              className="col-span-full border border-dashed border-white/25 bg-black px-6 py-16 text-center font-mono"
+              className="w-full border border-dashed border-white/25 bg-black px-6 py-16 text-center font-mono"
             >
               <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center border border-white/25 bg-black text-white/50">
                 <Search className="h-5 w-5" />
@@ -383,15 +362,41 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
         </AnimatePresence>
       </div>
 
-      {/* Infinite Scroll Sentinel & Loading Indicator */}
-      <div ref={sentinelRef} className="flex flex-col items-center justify-center pt-8 pb-16">
-        {isLoadingMore && (
-          <div
-            className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-700 border-t-zinc-200"
-            role="status"
-            aria-label="Loading"
-          />
-        )}
+      {/* Show More Pill & End of Feed Indicator */}
+      <div className="flex flex-col items-center justify-center pt-8 pb-16">
+        {hasMore ? (
+          <button
+            type="button"
+            onClick={loadMorePosts}
+            disabled={isLoadingMore}
+            className="group inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/30 bg-black px-6 py-2.5 font-mono text-xs tracking-wider text-white transition-all duration-150 hover:border-white hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {isLoadingMore ? (
+              <>
+                <div
+                  className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white group-hover:border-black/30 group-hover:border-t-black"
+                  role="status"
+                  aria-label="Loading"
+                />
+                <span>LOADING...</span>
+              </>
+            ) : (
+              <>
+                <span className="font-semibold">SHOW MORE</span>
+                <ChevronDown className="h-3.5 w-3.5 opacity-60 transition-transform group-hover:translate-y-0.5 group-hover:opacity-100" />
+                {currentTotalCount !== undefined && currentTotalCount > posts.length && (
+                  <span className="text-[10px] text-white/50 group-hover:text-black/60">
+                    ({posts.length} / {currentTotalCount})
+                  </span>
+                )}
+              </>
+            )}
+          </button>
+        ) : posts.length > 0 ? (
+          <div className="font-mono text-[11px] text-white/40">
+            End of feed ({posts.length} logs)
+          </div>
+        ) : null}
       </div>
     </div>
   );

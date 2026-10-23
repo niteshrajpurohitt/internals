@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "motion/react";
 import { ArrowUpRight, Clock, Hash, Bookmark, AlertTriangle } from "lucide-react";
 import { PostWithCompany, CategoryFilter } from "@/lib/types";
@@ -147,12 +148,9 @@ const COMPANY_ACCENTS: Record<string, string> = {
 };
 
 export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
   const companyName = post.company?.name || post.companies?.name || "Engineering";
   const canonicalSection = resolveCanonicalSection(post.tags);
-  const isClassic = post.tags.some((t) => t.toLowerCase() === "classics");
-  const isPostmortem = post.tags.some(
-    (t) => t.toLowerCase() === "postmortems" || t.toLowerCase() === "postmortem"
-  );
 
   return (
     <motion.article
@@ -160,12 +158,16 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
       transition={{ duration: 0.2, delay: Math.min(index * 0.03, 0.25) }}
-      className="group cad-crosshair relative flex flex-col justify-between border border-white/25 bg-black p-4.5 transition-all duration-150 hover:border-white sm:p-5"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="group cad-crosshair relative flex flex-col justify-between border border-white/25 bg-black p-4.5 transition-colors duration-150 hover:border-white sm:p-5"
     >
       <a
         href={post.source_url}
         target="_blank"
         rel="noopener noreferrer"
+        onFocus={() => setIsHovered(true)}
+        onBlur={() => setIsHovered(false)}
         className="flex flex-1 flex-col focus:outline-none focus-visible:ring-1 focus-visible:ring-white"
       >
         {/* Header Dimension Row: Company, Time, Status, Launch Icon */}
@@ -180,40 +182,41 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
             <span className="text-[10px] text-white/60">
               {getRelativeTime(post.published_at)}
             </span>
-
-            {isPostmortem && (
-              <span className="border border-red-500/80 bg-red-950/40 px-1.5 py-0.5 text-[10px] font-bold text-red-400">
-                [ POSTMORTEM ]
-              </span>
-            )}
-
-            {isClassic && (
-              <span className="border border-amber-500/80 bg-amber-950/40 px-1.5 py-0.5 text-[10px] font-bold text-amber-300">
-                [ CLASSIC ]
-              </span>
-            )}
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <span className="font-mono text-[9px] text-white/30 hidden sm:inline">|← LAUNCH →|</span>
-            <span className="flex h-5 w-5 items-center justify-center border border-white/40 bg-black text-white/70 transition-all duration-150 group-hover:border-white group-hover:bg-white group-hover:text-black">
-              <ArrowUpRight className="h-3 w-3" />
-            </span>
+          <div className="flex items-center gap-1.5 pr-1.5 pt-1.5">
+            <div className="relative h-5 w-5">
+              {/* Underlying outline footprint that stays in place */}
+              <div className="absolute inset-0 border border-white/40 bg-black" />
+
+              {/* Foreground interactive tile that shifts up and right on hover */}
+              <motion.span
+                initial={false}
+                animate={{
+                  x: isHovered ? 4 : 0,
+                  y: isHovered ? -4 : 0,
+                  backgroundColor: isHovered ? "#ffffff" : "#000000",
+                  color: isHovered ? "#000000" : "rgba(255, 255, 255, 0.7)",
+                  borderColor: isHovered ? "#ffffff" : "rgba(255, 255, 255, 0.4)",
+                }}
+                transition={{ type: "spring", stiffness: 450, damping: 20 }}
+                className="absolute inset-0 flex items-center justify-center border shadow-xs"
+              >
+                <ArrowUpRight className="h-3 w-3" />
+              </motion.span>
+            </div>
           </div>
         </div>
 
         {/* Title */}
-        <h2 className="mt-3 text-[15px] font-semibold leading-snug tracking-tight text-white transition-colors group-hover:text-white/90 sm:text-base">
+        <h2 className="mt-3 text-[15px] font-semibold leading-snug tracking-tight text-white transition-colors group-hover:text-white/90 sm:text-lg">
           {post.title}
         </h2>
 
-        {/* CAD Blueprint Takeaway Sub-Box */}
-        <div className="mt-3 border border-white/20 bg-white/[0.02] p-3 text-xs leading-relaxed text-white/80">
-          <div className="cad-dim-line mb-1.5">
-            <span>|← TECHNICAL TAKEAWAY →|</span>
-          </div>
-          <p className="line-clamp-2 text-white/75">{post.summary}</p>
-        </div>
+        {/* Summary */}
+        <p className="mt-2.5 line-clamp-2 sm:line-clamp-3 text-xs sm:text-sm leading-relaxed text-white/75">
+          {post.summary}
+        </p>
       </a>
 
       {/* Footer Dimension Row: Tags, Scale, Read Time */}
@@ -240,7 +243,6 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
         </div>
 
         <div className="flex items-center gap-3 text-white/50">
-          <span className="hidden text-[9px] text-white/30 sm:inline">[ SCALE 1:1 ]</span>
           <div className="flex items-center gap-1 text-[10px]">
             <Clock className="h-3 w-3 text-white/40" />
             <span>{post.read_time}</span>

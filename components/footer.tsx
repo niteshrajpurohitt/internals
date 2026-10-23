@@ -9,7 +9,7 @@ export function Footer() {
 
   return (
     <footer className="mt-20 w-full border-t border-white/15 bg-black pt-12 pb-16 font-mono text-xs text-white/60">
-      <Container size="wide">
+      <Container size="default">
         <div className="mb-10 grid grid-cols-1 gap-8 md:grid-cols-3">
           {/* Col 1: Mission & Legal Guardrail */}
           <div className="space-y-2 md:col-span-2">

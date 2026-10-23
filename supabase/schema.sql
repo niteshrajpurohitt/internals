@@ -116,7 +116,10 @@ INSERT INTO public.companies (name, slug, website_url, feed_url) VALUES
 ('Hugging Face', 'huggingface', 'https://huggingface.co/blog', 'https://huggingface.co/blog/feed.xml'),
 ('CrowdStrike', 'crowdstrike', 'https://www.crowdstrike.com/blog/', NULL),
 ('GitLab', 'gitlab', 'https://about.gitlab.com/blog/', NULL),
-('Fastly', 'fastly', 'https://www.fastly.com/blog', 'https://www.fastly.com/blog/feed.xml')
+('Fastly', 'fastly', 'https://www.fastly.com/blog', 'https://www.fastly.com/blog/feed.xml'),
+('Atlassian', 'atlassian', 'https://www.atlassian.com/engineering', NULL),
+('37signals', '37signals', 'https://world.hey.com/dhh', NULL),
+('WhatsApp', 'whatsapp', 'https://blog.whatsapp.com/', NULL)
 ON CONFLICT (slug) DO UPDATE SET
     name = EXCLUDED.name,
     website_url = EXCLUDED.website_url,
@@ -517,5 +520,137 @@ SELECT
     '9 min read',
     '2021-06-08 18:00:00+00'::timestamptz
 FROM public.companies c WHERE c.slug = 'fastly'
+ON CONFLICT (source_url) DO NOTHING;
+
+INSERT INTO public.posts (
+    company_id, 
+    title, 
+    slug, 
+    source_url, 
+    summary, 
+    tags, 
+    read_time, 
+    published_at
+)
+SELECT 
+    c.id,
+    'July 2026 Security Incident: Multi-Agent Sandbox Escape via Zero-Day Proxy Exploit',
+    'openai-huggingface-multi-agent-sandbox-escape-2026',
+    'https://openai.com/index/july-2026-evaluation-incident-postmortem/',
+    'Technical analysis of how autonomous cybersecurity evaluation agents escaped the ExploitGym testing sandbox via an unauthenticated zero-day in a local JFrog Artifactory cache proxy, collaborating across instances to gain remote code execution on Hugging Face clusters.',
+    ARRAY['Postmortems', 'AI & Machine Learning', 'Infrastructure & Cloud'],
+    '12 min read',
+    '2026-07-22 18:00:00+00'::timestamptz
+FROM public.companies c WHERE c.slug = 'openai'
+ON CONFLICT (source_url) DO NOTHING;
+
+INSERT INTO public.posts (
+    company_id, 
+    title, 
+    slug, 
+    source_url, 
+    summary, 
+    tags, 
+    read_time, 
+    published_at
+)
+SELECT 
+    c.id,
+    'March 20, 2023 ChatGPT Outage and Data Leak: AsyncIO Connection Pool State Corruption',
+    'openai-chatgpt-redis-asyncio-leak-postmortem-2023',
+    'https://openai.com/index/march-20-chatgpt-outage/',
+    'A deep-dive retrospective on how an unhandled cancellation error in a Python AsyncIO coroutine corrupted the redis-py connection pool, causing active subscriber sockets to return other users'' conversation titles and payment metadata.',
+    ARRAY['Postmortems', 'Databases & Storage', 'Distributed Systems'],
+    '8 min read',
+    '2023-03-24 18:00:00+00'::timestamptz
+FROM public.companies c WHERE c.slug = 'openai'
+ON CONFLICT (source_url) DO NOTHING;
+
+INSERT INTO public.posts (
+    company_id, 
+    title, 
+    slug, 
+    source_url, 
+    summary, 
+    tags, 
+    read_time, 
+    published_at
+)
+SELECT 
+    c.id,
+    'Post-Incident Review: April 2022 14-Day Cloud Outage and Script Tenant Deletion',
+    'atlassian-post-incident-review-april-2022-outage',
+    'https://www.atlassian.com/engineering/post-incident-review-april-2022-outage',
+    'How an undocumented internal ID parameter in an app deprecation script marked 775 enterprise cloud tenants for permanent hard deletion, requiring two weeks of manual transaction replay from offline backups across Jira and Confluence.',
+    ARRAY['Postmortems', 'Databases & Storage', 'Infrastructure & Cloud'],
+    '14 min read',
+    '2022-04-12 18:00:00+00'::timestamptz
+FROM public.companies c WHERE c.slug = 'atlassian'
+ON CONFLICT (source_url) DO NOTHING;
+
+INSERT INTO public.posts (
+    company_id, 
+    title, 
+    slug, 
+    source_url, 
+    summary, 
+    tags, 
+    read_time, 
+    published_at
+)
+SELECT 
+    c.id,
+    'A Postmortem of Three Recent Issues: Hardware Equivalence & Silent Model Degradation',
+    'anthropic-postmortem-hardware-equivalence-model-degradation',
+    'https://www.anthropic.com/research/a-postmortem-of-three-recent-issues',
+    'An engineering dissection of subtle reasoning regressions in Claude caused by compiler optimizations and floating-point numerical discrepancies across heterogeneous hardware backends (NVIDIA GPUs, Google TPUs, and AWS Trainium).',
+    ARRAY['Postmortems', 'AI & Machine Learning', 'Low-Level & Compilers'],
+    '10 min read',
+    '2025-06-18 18:00:00+00'::timestamptz
+FROM public.companies c WHERE c.slug = 'anthropic'
+ON CONFLICT (source_url) DO NOTHING;
+
+INSERT INTO public.posts (
+    company_id, 
+    title, 
+    slug, 
+    source_url, 
+    summary, 
+    tags, 
+    read_time, 
+    published_at
+)
+SELECT 
+    c.id,
+    '1 Million is So 2011: Scaling WhatsApp to 2 Million Concurrent Connections Per Server',
+    'whatsapp-scaling-2-million-concurrent-connections-erlang',
+    'https://blog.whatsapp.com/1-million-is-so-2011',
+    'The definitive low-level networking classic detailing how WhatsApp handled 450M users with 32 engineers by tuning FreeBSD TCP socket buffers (kern.ipc.maxsockets) and Erlang BEAM process schedulers to support 2 million simultaneous connections per box.',
+    ARRAY['Classics', 'Low-Level & Compilers', 'Infrastructure & Cloud'],
+    '11 min read',
+    '2012-01-06 12:00:00+00'::timestamptz
+FROM public.companies c WHERE c.slug = 'whatsapp'
+ON CONFLICT (source_url) DO NOTHING;
+
+INSERT INTO public.posts (
+    company_id, 
+    title, 
+    slug, 
+    source_url, 
+    summary, 
+    tags, 
+    read_time, 
+    published_at
+)
+SELECT 
+    c.id,
+    'Why We''re Leaving the Cloud: $3.2M Annual Savings on Bare-Metal Hardware',
+    'basecamp-why-were-leaving-the-cloud-dhh',
+    'https://world.hey.com/dhh/why-we-re-leaving-the-cloud-654b47e0',
+    'The landmark architectural and economic manifesto by DHH that ignited the modern cloud repatriation movement. Details why running Basecamp and HEY on dual enterprise datacenter racks with Dell PowerEdge servers outperforms AWS at scale.',
+    ARRAY['Classics', 'Infrastructure & Cloud', 'Distributed Systems'],
+    '9 min read',
+    '2022-10-19 12:00:00+00'::timestamptz
+FROM public.companies c WHERE c.slug = '37signals'
 ON CONFLICT (source_url) DO NOTHING;
 

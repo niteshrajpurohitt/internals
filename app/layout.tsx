@@ -34,6 +34,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { SearchProvider } from "@/lib/search-context";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -42,9 +44,11 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} dark`}>
       <body className="relative flex min-h-screen flex-col overflow-x-hidden bg-black font-sans text-white antialiased">
-        <Header />
-        {/* Main Content Area */}
-        <div className="relative z-10 flex flex-1 flex-col">{children}</div>
+        <SearchProvider>
+          <Header />
+          {/* Main Content Area */}
+          <div className="relative z-10 flex flex-1 flex-col">{children}</div>
+        </SearchProvider>
       </body>
     </html>
   );

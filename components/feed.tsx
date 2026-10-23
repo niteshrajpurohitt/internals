@@ -3,9 +3,10 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, X, RefreshCw, Check, ChevronDown } from "lucide-react";
+import { Search, RefreshCw, Check } from "lucide-react";
 import { PostWithCompany, Company, CategoryFilter } from "@/lib/types";
 import { interleavePostsByCompany } from "@/lib/supabase";
+import { useSearch } from "@/lib/search-context";
 import { PostCard } from "./post-card";
 
 interface FeedProps {
@@ -28,17 +29,16 @@ const CATEGORIES: CategoryFilter[] = [
 
 export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const router = useRouter();
+  const { searchQuery, setSearchQuery } = useSearch();
   const [posts, setPosts] = useState<PostWithCompany[]>(initialPosts);
   const [hasMore, setHasMore] = useState(
     totalCount ? initialPosts.length < totalCount : true
   );
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("All");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("all");
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const [isFiltering, setIsFiltering] = useState(false);
   const [currentTotalCount, setCurrentTotalCount] = useState<number | undefined>(totalCount);
@@ -166,63 +166,11 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     }
   };
 
-  // Keyboard shortcut listener (Cmd+K / Ctrl+K / slash)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      } else if (
-        e.key === "/" &&
-        document.activeElement?.tagName !== "INPUT" &&
-        document.activeElement?.tagName !== "TEXTAREA"
-      ) {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
   return (
-    <div className="w-full space-y-6">
-      {/* Search Bar & Company Filter Controls */}
-      <div className="space-y-3">
-        <div className="cad-crosshair relative flex items-center border border-dashed border-white/25 bg-black transition-colors focus-within:border-white/60">
-          <Search className="pointer-events-none absolute left-4 h-4 w-4 text-white/50" />
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Escape") {
-                setSearchQuery("");
-                searchInputRef.current?.blur();
-              }
-            }}
-            placeholder="Search systems, architectures, algorithms, or companies..."
-            className="h-11 w-full bg-transparent pr-10 pl-11 text-sm text-white placeholder:text-white/40 focus:outline-none"
-          />
-
-          {searchQuery && (
-            <div className="absolute right-3 flex items-center">
-              <button
-                onClick={() => setSearchQuery("")}
-                className="p-1 text-white/50 transition-colors hover:text-white"
-                aria-label="Clear search"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Category Pills & Company Filter Row */}
-        <div className="flex flex-col justify-between gap-3 pt-1 sm:flex-row sm:items-center">
-          <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 font-mono text-xs">
+    <div className="w-full space-y-5">
+      {/* Category Pills & Company Filter Row */}
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 font-mono text-xs">
             {CATEGORIES.map((category) => {
               const isActive = selectedCategory === category;
               return (
@@ -260,7 +208,6 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
             </select>
           </div>
         </div>
-      </div>
 
       {/* Feed Status / Post Count & Sync Action */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 px-1 pb-2 font-mono text-xs text-white/60">
@@ -363,33 +310,22 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
       </div>
 
       {/* Show More Pill & End of Feed Indicator */}
-      <div className="flex flex-col items-center justify-center pt-8 pb-16">
+      <div className="flex flex-col items-center justify-center pt-8 pb-2">
         {hasMore ? (
           <button
             type="button"
             onClick={loadMorePosts}
             disabled={isLoadingMore}
-            className="group inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/30 bg-black px-6 py-2.5 font-mono text-xs tracking-wider text-white transition-all duration-150 hover:border-white hover:bg-white hover:text-black disabled:cursor-not-allowed disabled:opacity-50"
+            className="inline-flex h-9 min-w-36 cursor-pointer items-center justify-center border border-white bg-white px-7 font-mono text-xs font-bold tracking-wider text-black transition-all hover:bg-white/90 active:scale-98 disabled:cursor-not-allowed disabled:opacity-70"
           >
             {isLoadingMore ? (
-              <>
-                <div
-                  className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white group-hover:border-black/30 group-hover:border-t-black"
-                  role="status"
-                  aria-label="Loading"
-                />
-                <span>LOADING...</span>
-              </>
+              <div
+                className="h-4 w-4 animate-spin rounded-full border-2 border-black/30 border-t-black"
+                role="status"
+                aria-label="Loading"
+              />
             ) : (
-              <>
-                <span className="font-semibold">SHOW MORE</span>
-                <ChevronDown className="h-3.5 w-3.5 opacity-60 transition-transform group-hover:translate-y-0.5 group-hover:opacity-100" />
-                {currentTotalCount !== undefined && currentTotalCount > posts.length && (
-                  <span className="text-[10px] text-white/50 group-hover:text-black/60">
-                    ({posts.length} / {currentTotalCount})
-                  </span>
-                )}
-              </>
+              <span>SHOW MORE</span>
             )}
           </button>
         ) : posts.length > 0 ? (

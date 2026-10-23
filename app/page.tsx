@@ -14,9 +14,9 @@ export default async function HomePage() {
 
   return (
     <main className="flex min-h-screen flex-col justify-between">
-      <Container size="default" className="pt-8 pb-12 sm:pt-10">
+      <Container size="default" className="pt-8 pb-4 sm:pt-10">
         {/* Hero Section */}
-        <header className="cad-crosshair mb-8 border border-dashed border-white/20 bg-black p-5 sm:p-6">
+        <header className="cad-crosshair mb-8 border border-dashed border-white/25 bg-neutral-950 p-5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.06)] sm:p-6">
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white">
             Curated Systems Architecture
           </h1>

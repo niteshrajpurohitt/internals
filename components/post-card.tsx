@@ -160,7 +160,7 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
       transition={{ duration: 0.2, delay: Math.min(index * 0.03, 0.25) }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group cad-crosshair relative flex flex-col justify-between border border-white/25 bg-black p-4.5 transition-colors duration-150 hover:border-white sm:p-5"
+      className="group cad-crosshair relative flex flex-col justify-between border border-white/30 bg-neutral-950 p-4.5 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.08)] transition-colors duration-150 hover:border-white sm:p-5"
     >
       <a
         href={post.source_url}

@@ -19,11 +19,12 @@ const TITLE_VETO_PATTERNS: RegExp[] = [
   /\b[a-zA-Z0-9\s]+\s+[0-9]+\.[0-9]+\s+(is\s+)?now available\b/i,
 
   // Product / Feature Launch Announcements & Changelogs
-  /^(announcing|introducing|meet|welcome to|new in)\s+[\w\s]+(dashboard|console|ui|portal|pricing|gateway|tier|service|feature)\b/i,
+  /^(announcing|introducing|meet|welcome to|new in)\s+[\w\s]+(dashboard|console|ui|portal|pricing|gateway|tier|service|feature|lens|scim|read replicas)\b/i,
   /\b(what's new in|monthly roundup|weekly roundup|quarterly update|product update|changelog|release notes)\b/i,
   /\b(this release (targets|introduces|brings|adds|fixes))\b/i,
   /^v?[0-9]+\.[0-9]+/i,
   /^release\s+v/i,
+  /^announcing\s+[\w\s.-]+\s+v?[0-9]+\.[0-9]+/i,
   /merge\s+pull\s+request/i,
   /release\s+changelog/i,
 
@@ -42,6 +43,7 @@ const TITLE_VETO_PATTERNS: RegExp[] = [
   /\b(public policy|policy agenda|political advocacy|tech policy|industrial policy|government relations|national security partnerships?)\b/i,
   /\b(tariffs? campaign|influence activity|regulatory framework|societal resilience|advocacy agenda|amicus brief)\b/i,
   /\b(economic research exchange|funding grants?|grant program|fellowship program|teen development)\b/i,
+  /\b(gambling spam network|political commenting network|disrupting malicious uses of ai)\b/i,
 
   // Customer Marketing, Promotional & Sales Case Studies
   /^how\s+[\w\s]+\s+(is using|uses|scales with|transforms|reimagines|chose|accelerates with)\s+/i,
@@ -684,11 +686,13 @@ export function detectCategories(
     detectedTags.add("Postmortems");
   }
 
-  // Auto-detect production postmortems & incident analyses
+  // Auto-detect production postmortems & incident analyses (strictly title-driven to avoid false positives)
   if (
-    /\b(postmortem|outage\s+analysis|root\s+cause\s+analysis|\brca\b|incident\s+report|incident\s+review|service\s+disruption|post-mortem)\b/i.test(
-      `${title} ${summary}`
-    )
+    /\b(postmortem|post-mortem|root\s+cause\s+analysis|\brca\b|incident\s+report|outage\s+analysis|service\s+disruption)\b/i.test(
+      title
+    ) ||
+    (/\b(outage|disruption|downtime|major\s+incident)\b/i.test(title) &&
+      /\b(postmortem|post-mortem|root\s+cause|retrospective|incident\s+report)\b/i.test(summary))
   ) {
     detectedTags.add("Postmortems");
   }
@@ -744,7 +748,7 @@ export function detectCategories(
   }
 
   const tagsArray = Array.from(detectedTags);
-  return tagsArray.length > 0 ? tagsArray.slice(0, 4) : ["Infrastructure & Cloud"];
+  return tagsArray.slice(0, 4);
 }
 
 export function decodeHtmlEntities(text: string): string {
@@ -866,6 +870,20 @@ export async function fetchAndParseFeed(
       const title = cleanTitle(item.title || "");
       const link = (item.link || "").trim();
       if (!title || !link || !link.startsWith("http")) continue;
+
+      // Quality filter 0: Fast URL veto - reject changelog, release notes, press, announcements
+      const lowerLink = link.toLowerCase();
+      if (
+        lowerLink.includes("/changelog/") ||
+        lowerLink.includes("/changelog") ||
+        lowerLink.includes("/releases/") ||
+        lowerLink.includes("/release-notes/") ||
+        lowerLink.includes("/press/") ||
+        lowerLink.includes("/announcements/") ||
+        lowerLink.includes("disrupting-malicious-uses-of-ai")
+      ) {
+        continue;
+      }
 
       // Fast 0ms skip: if already saved in database, don't do any processing
       if (existingUrls && existingUrls.has(link)) {

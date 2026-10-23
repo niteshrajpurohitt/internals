@@ -2,14 +2,16 @@
 
 import { useRef, useEffect, useState } from "react";
 import Link from "next/link";
-import { Search, X, User as UserIcon, LogOut } from "lucide-react";
+import { Search, X, User as UserIcon, LogOut, Bookmark } from "lucide-react";
 import { useSearch } from "@/lib/search-context";
 import { useAuth } from "@/lib/auth-context";
+import { useBookmarks } from "@/lib/bookmark-context";
 import { Container } from "./container";
 
 export function Header() {
   const { searchQuery, setSearchQuery } = useSearch();
   const { user, isLoading, openLoginModal, signOut } = useAuth();
+  const { bookmarkCount } = useBookmarks();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -123,6 +125,18 @@ export function Header() {
                   <div className="border-b border-white/10 px-2 py-1.5 text-left">
                     <p className="truncate font-semibold text-white">{displayName}</p>
                     <p className="truncate text-[10px] text-white/50">{user.email}</p>
+                  </div>
+
+                  <div className="border-b border-white/10 py-1">
+                    <div className="flex items-center justify-between px-2 py-1 text-white/70">
+                      <span className="flex items-center gap-1.5 text-[11px]">
+                        <Bookmark className="h-3 w-3" />
+                        Saved Articles
+                      </span>
+                      <span className="border border-white/20 bg-black px-1.5 py-0.2 text-[10px] font-bold text-white">
+                        {bookmarkCount}
+                      </span>
+                    </div>
                   </div>
 
                   <button

@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Bookmark } from "lucide-react";
 import { PostWithCompany, CategoryFilter } from "@/lib/types";
+import { useBookmarks } from "@/lib/bookmark-context";
 
 interface PostCardProps {
   post: PostWithCompany;
@@ -149,6 +150,8 @@ const COMPANY_ACCENTS: Record<string, string> = {
 
 export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const { isBookmarked, toggleBookmark } = useBookmarks();
+  const isSaved = isBookmarked(post.id);
   const companyName = post.company?.name || post.companies?.name || "Engineering";
   const canonicalSection = resolveCanonicalSection(post.tags);
 
@@ -193,7 +196,27 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
             )}
           </div>
 
-          <div className="flex items-center gap-1.5 pr-1.5 pt-1.5">
+          <div className="flex items-center gap-2 pr-1 pt-1">
+            {/* Bookmark button */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleBookmark(post.id);
+              }}
+              title={isSaved ? "Remove from saved" : "Save article"}
+              aria-label={isSaved ? "Remove from saved" : "Save article"}
+              className={`relative z-10 flex h-5 w-5 items-center justify-center border transition-all cursor-pointer ${
+                isSaved
+                  ? "border-white bg-white text-black shadow-[0_0_8px_rgba(255,255,255,0.4)]"
+                  : "border-white/25 bg-black text-white/50 hover:border-white hover:text-white"
+              }`}
+            >
+              <Bookmark className={`h-2.5 w-2.5 ${isSaved ? "fill-black text-black" : ""}`} />
+            </button>
+
+            {/* Launch tile */}
             <div className="relative h-5 w-5">
               {/* Underlying outline footprint that stays in place */}
               <div className="absolute inset-0 border border-white/40 bg-black" />

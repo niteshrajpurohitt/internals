@@ -28,6 +28,7 @@ export interface PostWithCompany extends Post {
 
 export type CategoryFilter =
   | "All"
+  | "Saved"
   | "Classics"
   | "Postmortems"
   | "AI & Machine Learning"

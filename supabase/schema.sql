@@ -707,3 +707,26 @@ CREATE TRIGGER on_auth_user_created
     AFTER INSERT OR UPDATE ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
+-- ==============================================================================
+-- 10. User Bookmarks Table (v2.0)
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS public.user_bookmarks (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    post_id UUID NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    UNIQUE(user_id, post_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_bookmarks_user_id ON public.user_bookmarks(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_bookmarks_post_id ON public.user_bookmarks(post_id);
+
+ALTER TABLE public.user_bookmarks ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their own bookmarks"
+ON public.user_bookmarks
+FOR ALL
+USING (auth.uid() = user_id)
+WITH CHECK (auth.uid() = user_id);
+

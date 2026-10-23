@@ -3,10 +3,12 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, RefreshCw, Check } from "lucide-react";
+import { Search, RefreshCw, Check, Bookmark } from "lucide-react";
 import { PostWithCompany, Company, CategoryFilter } from "@/lib/types";
 import { interleavePostsByCompany } from "@/lib/supabase";
 import { useSearch } from "@/lib/search-context";
+import { useAuth } from "@/lib/auth-context";
+import { useBookmarks } from "@/lib/bookmark-context";
 import { PostCard } from "./post-card";
 
 interface FeedProps {
@@ -17,6 +19,7 @@ interface FeedProps {
 
 const CATEGORIES: CategoryFilter[] = [
   "All",
+  "Saved",
   "Classics",
   "Postmortems",
   "AI & Machine Learning",
@@ -30,6 +33,9 @@ const CATEGORIES: CategoryFilter[] = [
 export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const router = useRouter();
   const { searchQuery, setSearchQuery } = useSearch();
+  const { user, openLoginModal } = useAuth();
+  const { bookmarkCount, fetchSavedPosts, bookmarkedPostIds } = useBookmarks();
+
   const [posts, setPosts] = useState<PostWithCompany[]>(initialPosts);
   const [hasMore, setHasMore] = useState(
     totalCount ? initialPosts.length < totalCount : true
@@ -45,12 +51,14 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
 
   // Sync initialPosts updates (e.g. after sync refresh)
   useEffect(() => {
-    setPosts(initialPosts);
-    setCurrentTotalCount(totalCount);
-    if (totalCount) {
-      setHasMore(initialPosts.length < totalCount);
+    if (selectedCategory !== "Saved") {
+      setPosts(initialPosts);
+      setCurrentTotalCount(totalCount);
+      if (totalCount) {
+        setHasMore(initialPosts.length < totalCount);
+      }
     }
-  }, [initialPosts, totalCount]);
+  }, [initialPosts, totalCount, selectedCategory]);
 
   const buildQueryUrl = (offset: number, limit: number) => {
     const params = new URLSearchParams();
@@ -68,8 +76,48 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     return `/api/posts?${params.toString()}`;
   };
 
+  // Sync if bookmarks change while viewing the Saved tab
+  useEffect(() => {
+    if (selectedCategory === "Saved" && user) {
+      setPosts((prev) => prev.filter((p) => bookmarkedPostIds.has(p.id)));
+      setCurrentTotalCount(bookmarkedPostIds.size);
+    }
+  }, [bookmarkedPostIds, selectedCategory, user]);
+
   // Reactive server-side filtering across the entire database
   useEffect(() => {
+    if (selectedCategory === "Saved") {
+      if (!user) {
+        setIsFiltering(false);
+        setPosts([]);
+        setCurrentTotalCount(0);
+        setHasMore(false);
+        return;
+      }
+      setIsFiltering(true);
+      fetchSavedPosts().then((saved) => {
+        let filtered = saved;
+        if (selectedCompanyId !== "all") {
+          filtered = filtered.filter(
+            (p) => (p.company?.id || p.companies?.id) === selectedCompanyId
+          );
+        }
+        if (searchQuery.trim()) {
+          const q = searchQuery.toLowerCase();
+          filtered = filtered.filter(
+            (p) =>
+              p.title.toLowerCase().includes(q) ||
+              p.summary.toLowerCase().includes(q)
+          );
+        }
+        setPosts(filtered);
+        setCurrentTotalCount(filtered.length);
+        setHasMore(false);
+        setIsFiltering(false);
+      });
+      return;
+    }
+
     const isDefault =
       selectedCategory === "All" && selectedCompanyId === "all" && !searchQuery.trim();
 
@@ -111,7 +159,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
       clearTimeout(timer);
       abortController.abort();
     };
-  }, [selectedCategory, selectedCompanyId, searchQuery, initialPosts, totalCount]);
+  }, [selectedCategory, selectedCompanyId, searchQuery, initialPosts, totalCount, user, fetchSavedPosts]);
 
   const loadMorePosts = async () => {
     if (isLoadingMore || !hasMore || isFiltering) return;
@@ -173,17 +221,39 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
         <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 font-mono text-xs">
             {CATEGORIES.map((category) => {
               const isActive = selectedCategory === category;
+              const isSaved = category === "Saved";
+
               return (
                 <button
                   key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`inline-flex h-7 shrink-0 cursor-pointer items-center justify-center border px-3 text-xs uppercase whitespace-nowrap transition-colors duration-100 ${
+                  onClick={() => {
+                    if (isSaved && !user) {
+                      openLoginModal();
+                    } else {
+                      setSelectedCategory(category);
+                    }
+                  }}
+                  className={`inline-flex h-7 shrink-0 cursor-pointer items-center justify-center gap-1.5 border px-3 text-xs uppercase whitespace-nowrap transition-colors duration-100 ${
                     isActive
                       ? "border-white bg-white font-bold text-black"
                       : "border-white/20 bg-black text-white/70 hover:border-white/50 hover:text-white"
                   }`}
                 >
-                  {category}
+                  {isSaved && (
+                    <Bookmark
+                      className={`h-3 w-3 ${
+                        isActive
+                          ? "fill-black text-black"
+                          : bookmarkCount > 0
+                          ? "fill-white text-white"
+                          : "text-white/70"
+                      }`}
+                    />
+                  )}
+                  <span>
+                    {category}
+                    {isSaved && user && bookmarkCount > 0 ? ` (${bookmarkCount})` : ""}
+                  </span>
                 </button>
               );
             })}
@@ -288,24 +358,46 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               exit={{ opacity: 0, scale: 0.98 }}
               className="w-full border border-dashed border-white/25 bg-black px-6 py-16 text-center font-mono"
             >
-              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center border border-white/25 bg-black text-white/50">
-                <Search className="h-5 w-5" />
-              </div>
-              <h3 className="text-sm font-medium text-white">No matching technical logs</h3>
-              <p className="mx-auto mt-1 max-w-sm text-xs text-white/60">
-                No articles matched &quot;{searchQuery || selectedCategory}&quot;. Try broadening
-                your keywords or resetting category filters.
-              </p>
-              <button
-                onClick={() => {
-                  setSelectedCategory("All");
-                  setSelectedCompanyId("all");
-                  setSearchQuery("");
-                }}
-                className="mt-4 cursor-pointer border border-white/40 bg-black px-3 py-1.5 text-xs text-white transition-colors hover:border-white hover:bg-white hover:text-black"
-              >
-                Clear all filters
-              </button>
+              {selectedCategory === "Saved" ? (
+                <>
+                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center border border-white/25 bg-black text-white/50">
+                    <Bookmark className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-sm font-medium text-white">No saved articles yet</h3>
+                  <p className="mx-auto mt-1 max-w-sm text-xs text-white/60 leading-relaxed">
+                    Click the bookmark icon on any engineering post to save it to your personal library.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setSelectedCategory("All");
+                    }}
+                    className="mt-4 cursor-pointer border border-white/40 bg-black px-3 py-1.5 text-xs text-white transition-colors hover:border-white hover:bg-white hover:text-black"
+                  >
+                    Browse Feed
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center border border-white/25 bg-black text-white/50">
+                    <Search className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-sm font-medium text-white">No matching technical logs</h3>
+                  <p className="mx-auto mt-1 max-w-sm text-xs text-white/60">
+                    No articles matched &quot;{searchQuery || selectedCategory}&quot;. Try broadening
+                    your keywords or resetting category filters.
+                  </p>
+                  <button
+                    onClick={() => {
+                      setSelectedCategory("All");
+                      setSelectedCompanyId("all");
+                      setSearchQuery("");
+                    }}
+                    className="mt-4 cursor-pointer border border-white/40 bg-black px-3 py-1.5 text-xs text-white transition-colors hover:border-white hover:bg-white hover:text-black"
+                  >
+                    Clear all filters
+                  </button>
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

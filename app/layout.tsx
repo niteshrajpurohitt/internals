@@ -38,6 +38,8 @@ export const metadata: Metadata = {
 };
 
 import { SearchProvider } from "@/lib/search-context";
+import { AuthProvider } from "@/lib/auth-context";
+import { LoginModal } from "@/components/login-modal";
 
 export default function RootLayout({
   children,
@@ -47,11 +49,14 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} dark`}>
       <body className="relative flex min-h-screen flex-col overflow-x-hidden bg-black font-sans text-white antialiased">
-        <SearchProvider>
-          <Header />
-          {/* Main Content Area */}
-          <div className="relative z-10 flex flex-1 flex-col">{children}</div>
-        </SearchProvider>
+        <AuthProvider>
+          <SearchProvider>
+            <Header />
+            {/* Main Content Area */}
+            <div className="relative z-10 flex flex-1 flex-col">{children}</div>
+            <LoginModal />
+          </SearchProvider>
+        </AuthProvider>
       </body>
     </html>
   );

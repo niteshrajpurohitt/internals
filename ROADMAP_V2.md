@@ -6,9 +6,10 @@ This document tracks planned features, architectural requirements, and design sp
 
 ## 1. User Accounts & Personalization (Supabase Auth)
 
-### 1.1 GitHub 1-Click OAuth
-- **Auth Provider:** Supabase Auth with GitHub OAuth (standard for developer tools).
-- **User Profile Table:** `profiles` table in Supabase linking `auth.users.id` with bookmarks and preferences.
+### 1.1 GitHub & Google 1-Click OAuth (100% Free / $0)
+- **Auth Provider:** Supabase Auth supporting both **GitHub** and **Google** OAuth simultaneously.
+- **Cost / Limits:** $0 (Supabase free tier provides up to 50,000 Monthly Active Users with unlimited social OAuth providers).
+- **User Profile Table:** `profiles` table in Supabase linking `auth.users.id` with bookmarks, followed stacks, and preferences.
 
 ### 1.2 Bookmarks ("Saved" Tab)
 - **Functionality:** 

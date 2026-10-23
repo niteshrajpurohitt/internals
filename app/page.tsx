@@ -8,7 +8,7 @@ export const revalidate = 60; // ISR revalidate every 60 seconds
 export default async function HomePage() {
   const [companies, posts, totalCount] = await Promise.all([
     getCompanies({ minPosts: 2 }),
-    getPosts({ offset: 0, limit: 40 }),
+    getPosts({ offset: 0, limit: 20 }),
     getPostCount(),
   ]);
 

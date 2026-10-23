@@ -136,7 +136,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     const timer = setTimeout(async () => {
       setIsFiltering(true);
       try {
-        const url = buildQueryUrl(0, 30);
+        const url = buildQueryUrl(0, 20);
         const res = await fetch(url, { signal: abortController.signal });
         if (!res.ok) throw new Error("Failed to filter posts");
         const data = await res.json();
@@ -165,7 +165,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     if (isLoadingMore || !hasMore || isFiltering) return;
     setIsLoadingMore(true);
     try {
-      const url = buildQueryUrl(posts.length, 30);
+      const url = buildQueryUrl(posts.length, 20);
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to fetch more posts");
       const data = await res.json();

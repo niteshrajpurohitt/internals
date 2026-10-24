@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/header";
+import { SearchProvider } from "@/lib/search-context";
+import { AuthProvider } from "@/lib/auth-context";
+import { BookmarkProvider } from "@/lib/bookmark-context";
+import { ThemeProvider } from "@/lib/theme-context";
+import { LoginModal } from "@/components/login-modal";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -37,29 +42,35 @@ export const metadata: Metadata = {
   },
 };
 
-import { SearchProvider } from "@/lib/search-context";
-import { AuthProvider } from "@/lib/auth-context";
-import { BookmarkProvider } from "@/lib/bookmark-context";
-import { LoginModal } from "@/components/login-modal";
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} dark`}>
-      <body className="relative flex min-h-screen flex-col overflow-x-hidden bg-black font-sans text-white antialiased">
-        <AuthProvider>
-          <BookmarkProvider>
-            <SearchProvider>
-              <Header />
-              {/* Main Content Area */}
-              <div className="relative z-10 flex flex-1 flex-col">{children}</div>
-              <LoginModal />
-            </SearchProvider>
-          </BookmarkProvider>
-        </AuthProvider>
+    <html
+      lang="en"
+      data-theme="dark"
+      className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
+    >
+      {/* Anti-FOUC: apply stored theme before first paint */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `(function(){try{var t=localStorage.getItem('internals-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`,
+        }}
+      />
+      <body className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#f4f3ef] font-sans text-neutral-950 antialiased dark:bg-black dark:text-white">
+        <ThemeProvider>
+          <AuthProvider>
+            <BookmarkProvider>
+              <SearchProvider>
+                <Header />
+                <div className="relative z-10 flex flex-1 flex-col">{children}</div>
+                <LoginModal />
+              </SearchProvider>
+            </BookmarkProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

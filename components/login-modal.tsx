@@ -10,9 +10,7 @@ export function LoginModal() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isLoginModalOpen) {
-        closeLoginModal();
-      }
+      if (e.key === "Escape" && isLoginModalOpen) closeLoginModal();
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -21,48 +19,40 @@ export function LoginModal() {
   if (!isLoginModalOpen) return null;
 
   const handleGithub = async () => {
-    try {
-      setLoadingProvider("github");
-      await signInWithGithub();
-    } catch {
-      setLoadingProvider(null);
-    }
+    try { setLoadingProvider("github"); await signInWithGithub(); }
+    catch { setLoadingProvider(null); }
   };
 
   const handleGoogle = async () => {
-    try {
-      setLoadingProvider("google");
-      await signInWithGoogle();
-    } catch {
-      setLoadingProvider(null);
-    }
+    try { setLoadingProvider("google"); await signInWithGoogle(); }
+    catch { setLoadingProvider(null); }
   };
 
   return (
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f3ef]/80 p-4 backdrop-blur-sm animate-in fade-in duration-150 dark:bg-black/80"
       onClick={closeLoginModal}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="cad-crosshair relative w-full max-w-sm border border-white/25 bg-neutral-950 p-6 shadow-2xl"
+        className="cad-crosshair relative w-full max-w-sm border border-neutral-950/25 bg-white p-6 shadow-2xl dark:border-white/25 dark:bg-neutral-950"
       >
-        {/* Header decoration */}
-        <div className="flex items-center justify-between border-b border-white/15 pb-3">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-neutral-950/15 pb-3 dark:border-white/15">
           <div className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center border border-white bg-black font-mono text-[10px] font-bold text-white">
+            <span className="flex h-5 w-5 items-center justify-center border border-neutral-950 bg-[#f4f3ef] font-mono text-[10px] font-bold text-neutral-950 dark:border-white dark:bg-black dark:text-white">
               IN
             </span>
-            <span className="font-mono text-xs uppercase tracking-wider text-white/70">
+            <span className="font-mono text-xs uppercase tracking-wider text-neutral-950/70 dark:text-white/70">
               User Access // v2.0
             </span>
           </div>
           <button
             onClick={closeLoginModal}
             aria-label="Close dialog"
-            className="text-white/50 transition-colors hover:text-white"
+            className="text-neutral-950/50 transition-opacity hover:opacity-80 dark:text-white/50"
           >
             <X className="h-4 w-4" />
           </button>
@@ -70,21 +60,21 @@ export function LoginModal() {
 
         {/* Pitch */}
         <div className="mt-5 text-left">
-          <h2 className="text-lg font-bold tracking-tight text-white">
+          <h2 className="text-lg font-bold tracking-tight text-neutral-950 dark:text-white">
             Developer Account
           </h2>
-          <p className="mt-1 font-mono text-xs text-white/60 leading-relaxed">
+          <p className="mt-1 font-mono text-xs leading-relaxed text-neutral-950/60 dark:text-white/60">
             100% Free. Sync bookmarks across all your devices, follow top engineering teams, and filter noise.
           </p>
         </div>
 
         {/* Buttons */}
         <div className="mt-6 flex flex-col gap-2.5 font-mono text-xs">
-          {/* GitHub button */}
+          {/* GitHub */}
           <button
             onClick={handleGithub}
             disabled={loadingProvider !== null}
-            className="flex h-10 w-full items-center justify-center gap-2.5 border border-white/25 bg-white text-black font-semibold transition-all hover:bg-neutral-200 disabled:opacity-50 cursor-pointer shadow-xs"
+            className="flex h-10 w-full cursor-pointer items-center justify-center gap-2.5 border border-neutral-950/25 bg-neutral-950 font-semibold text-white shadow-xs transition-all hover:bg-neutral-800 disabled:opacity-50 dark:border-white/25 dark:bg-white dark:text-black dark:hover:bg-neutral-100"
           >
             <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
               <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
@@ -92,11 +82,11 @@ export function LoginModal() {
             <span>{loadingProvider === "github" ? "Connecting..." : "Continue with GitHub"}</span>
           </button>
 
-          {/* Google button */}
+          {/* Google */}
           <button
             onClick={handleGoogle}
             disabled={loadingProvider !== null}
-            className="flex h-10 w-full items-center justify-center gap-2.5 border border-white/20 bg-black text-white font-medium transition-all hover:bg-neutral-900 hover:border-white/40 disabled:opacity-50 cursor-pointer"
+            className="flex h-10 w-full cursor-pointer items-center justify-center gap-2.5 border border-neutral-950/20 bg-white font-medium text-neutral-950 transition-all hover:bg-neutral-50 disabled:opacity-50 dark:border-white/20 dark:bg-neutral-900 dark:text-white dark:hover:bg-neutral-800"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"/>
@@ -108,10 +98,10 @@ export function LoginModal() {
           </button>
         </div>
 
-        {/* Footer info */}
-        <div className="mt-5 border-t border-white/10 pt-3 text-center">
-          <p className="font-mono text-[10px] text-white/40 flex items-center justify-center gap-1">
-            <Sparkles className="h-2.5 w-2.5 text-white/40" />
+        {/* Footer */}
+        <div className="mt-5 border-t border-neutral-950/10 pt-3 text-center dark:border-white/10">
+          <p className="flex items-center justify-center gap-1 font-mono text-[10px] text-neutral-950/40 dark:text-white/40">
+            <Sparkles className="h-2.5 w-2.5" />
             Zero paywalls. No spam. Canonical links direct to authors.
           </p>
         </div>

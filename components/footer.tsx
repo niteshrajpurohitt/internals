@@ -1,39 +1,39 @@
 "use client";
 
 import { useState } from "react";
-import { ShieldCheck, Mail, ExternalLink, X, Terminal } from "lucide-react";
+import { ShieldCheck, Mail, ExternalLink, X } from "lucide-react";
 import { Container } from "@/components/container";
 
 export function Footer() {
   const [isDmcaOpen, setIsDmcaOpen] = useState(false);
 
   return (
-    <footer className="mt-6 w-full border-t border-white/15 bg-black pt-12 pb-16 font-mono text-xs text-white/60">
+    <footer className="mt-6 w-full border-t border-neutral-950/15 bg-[#f4f3ef] pt-12 pb-16 font-mono text-xs text-neutral-950/60 dark:border-white/15 dark:bg-black dark:text-white/60">
       <Container size="default">
         <div className="mb-10 grid grid-cols-1 gap-8 md:grid-cols-3">
-          {/* Col 1: Mission & Legal Guardrail */}
+          {/* Col 1 */}
           <div className="space-y-2 md:col-span-2">
-            <div className="flex items-center gap-2 font-bold text-white">
-              <span className="flex h-5 w-5 items-center justify-center border border-white bg-black text-[10px]">
+            <div className="flex items-center gap-2 font-bold text-neutral-950 dark:text-white">
+              <span className="flex h-5 w-5 items-center justify-center border border-neutral-950 bg-[#f4f3ef] text-[10px] text-neutral-950 dark:border-white dark:bg-black dark:text-white">
                 IN
               </span>
               <span className="tracking-wider uppercase">Internals Index</span>
             </div>
-            <p className="max-w-lg leading-relaxed text-white/60 font-sans text-xs">
+            <p className="max-w-lg font-sans text-xs leading-relaxed text-neutral-950/60 dark:text-white/60">
               Internals indexes public engineering blogs to direct discovery traffic to original authors. We do
               not mirror or paywall full article content; each entry links directly out to canonical publisher sources.
             </p>
           </div>
 
-          {/* Col 2: Compliance & Delist */}
+          {/* Col 2 */}
           <div className="space-y-2">
-            <div className="font-bold text-white uppercase">Legal & Compliance</div>
-            <ul className="space-y-1.5 text-white/50">
+            <div className="font-bold uppercase text-neutral-950 dark:text-white">Legal &amp; Compliance</div>
+            <ul className="space-y-1.5 text-neutral-950/50 dark:text-white/50">
               <li>
                 <button
                   type="button"
                   onClick={() => setIsDmcaOpen(true)}
-                  className="inline-flex cursor-pointer items-center gap-1 transition-colors hover:text-white underline"
+                  className="inline-flex cursor-pointer items-center gap-1 underline transition-opacity hover:opacity-80"
                 >
                   <span>[ Delist / DMCA Notice ]</span>
                 </button>
@@ -43,7 +43,7 @@ export function Footer() {
                   href="https://github.com/niteshrajpurohitt/internals"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 transition-colors hover:text-white"
+                  className="inline-flex items-center gap-1 transition-opacity hover:opacity-80"
                 >
                   <span>Suggest an Engineering Feed</span>
                   <ExternalLink className="h-3 w-3" />
@@ -54,48 +54,53 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="flex flex-col items-center justify-between gap-4 border-t border-white/15 pt-6 text-[10px] text-white/50 sm:flex-row">
+        <div className="flex flex-col items-center justify-between gap-4 border-t border-neutral-950/15 pt-6 text-[10px] text-neutral-950/50 sm:flex-row dark:border-white/15 dark:text-white/50">
           <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-neutral-950/50 dark:bg-white/50" />
             <span>|← ALL FEEDS OPERATIONAL • 38 REPOSITORIES LIVE →|</span>
           </div>
-
           <p>© {new Date().getFullYear()} Internals. Built for engineering teams.</p>
         </div>
       </Container>
 
-      {/* DMCA / Delist Modal */}
+      {/* DMCA Modal */}
       {isDmcaOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-xs">
-          <div className="cad-crosshair relative w-full max-w-md border border-white bg-black p-6 text-white shadow-2xl">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f3ef]/80 p-4 backdrop-blur-xs dark:bg-black/80"
+          onClick={() => setIsDmcaOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="cad-crosshair relative w-full max-w-md border border-neutral-950 bg-white p-6 text-neutral-950 shadow-2xl dark:border-white dark:bg-black dark:text-white"
+          >
             <button
               type="button"
               onClick={() => setIsDmcaOpen(false)}
-              className="absolute top-4 right-4 p-1 text-white/50 transition-colors hover:text-white"
+              className="absolute right-4 top-4 p-1 text-neutral-950/50 transition-opacity hover:opacity-80 dark:text-white/50"
             >
               <X className="h-4 w-4" />
             </button>
 
-            <div className="mb-3 flex items-center gap-2 font-bold text-white">
-              <ShieldCheck className="h-5 w-5 text-white" />
-              <span className="uppercase tracking-wider">Delist & Content Policy</span>
+            <div className="mb-3 flex items-center gap-2 font-bold text-neutral-950 dark:text-white">
+              <ShieldCheck className="h-5 w-5" />
+              <span className="uppercase tracking-wider">Delist &amp; Content Policy</span>
             </div>
 
-            <p className="mb-4 text-xs leading-relaxed text-white/70 font-sans">
+            <p className="mb-4 font-sans text-xs leading-relaxed text-neutral-950/70 dark:text-white/70">
               Internals strictly operates as a directory and discovery platform. We link directly to
               canonical publisher URLs and do not store or scrape original full-text articles.
             </p>
 
-            <p className="mb-6 text-xs leading-relaxed text-white/70 font-sans">
+            <p className="mb-6 font-sans text-xs leading-relaxed text-neutral-950/70 dark:text-white/70">
               If you represent an engineering blog publisher and wish to update metadata, modify
               indexing frequency, or delist your engineering feed, please reach out directly:
             </p>
 
-            <div className="flex items-center justify-between border border-white/30 bg-black p-3">
-              <span className="font-mono text-xs text-white">legal@internals.dev</span>
+            <div className="flex items-center justify-between border border-neutral-950/30 bg-[#f4f3ef] p-3 dark:border-white/30 dark:bg-neutral-950">
+              <span className="font-mono text-xs text-neutral-950 dark:text-white">legal@internals.dev</span>
               <a
                 href="mailto:legal@internals.dev?subject=Delist%20Request%20-%20Internals"
-                className="inline-flex items-center gap-1 border border-white bg-white px-2.5 py-1 text-xs text-black font-bold transition-colors hover:bg-black hover:text-white"
+                className="inline-flex items-center gap-1 border border-neutral-950 bg-neutral-950 px-2.5 py-1 text-xs font-bold text-white transition-colors hover:bg-neutral-800 dark:border-white dark:bg-white dark:text-black dark:hover:bg-neutral-100"
               >
                 <Mail className="h-3 w-3" />
                 <span>Send Email</span>
@@ -106,7 +111,7 @@ export function Footer() {
               <button
                 type="button"
                 onClick={() => setIsDmcaOpen(false)}
-                className="cursor-pointer border border-white/40 bg-black px-4 py-1.5 text-xs text-white transition-colors hover:border-white hover:bg-white hover:text-black"
+                className="cursor-pointer border border-neutral-950/40 bg-white px-4 py-1.5 text-xs text-neutral-950 transition-colors hover:border-neutral-950 hover:bg-neutral-950 hover:text-white dark:border-white/40 dark:bg-black dark:text-white dark:hover:border-white dark:hover:bg-white dark:hover:text-black"
               >
                 Close
               </button>

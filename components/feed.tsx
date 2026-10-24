@@ -45,18 +45,14 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("all");
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
-
   const [isFiltering, setIsFiltering] = useState(false);
   const [currentTotalCount, setCurrentTotalCount] = useState<number | undefined>(totalCount);
 
-  // Sync initialPosts updates (e.g. after sync refresh)
   useEffect(() => {
     if (selectedCategory !== "Saved") {
       setPosts(initialPosts);
       setCurrentTotalCount(totalCount);
-      if (totalCount) {
-        setHasMore(initialPosts.length < totalCount);
-      }
+      if (totalCount) setHasMore(initialPosts.length < totalCount);
     }
   }, [initialPosts, totalCount, selectedCategory]);
 
@@ -64,19 +60,12 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     const params = new URLSearchParams();
     params.set("offset", offset.toString());
     params.set("limit", limit.toString());
-    if (selectedCompanyId !== "all") {
-      params.set("companyId", selectedCompanyId);
-    }
-    if (selectedCategory !== "All") {
-      params.set("category", selectedCategory);
-    }
-    if (searchQuery.trim()) {
-      params.set("q", searchQuery.trim());
-    }
+    if (selectedCompanyId !== "all") params.set("companyId", selectedCompanyId);
+    if (selectedCategory !== "All") params.set("category", selectedCategory);
+    if (searchQuery.trim()) params.set("q", searchQuery.trim());
     return `/api/posts?${params.toString()}`;
   };
 
-  // Sync if bookmarks change while viewing the Saved tab
   useEffect(() => {
     if (selectedCategory === "Saved" && user) {
       setPosts((prev) => prev.filter((p) => bookmarkedPostIds.has(p.id)));
@@ -84,7 +73,6 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     }
   }, [bookmarkedPostIds, selectedCategory, user]);
 
-  // Reactive server-side filtering across the entire database
   useEffect(() => {
     if (selectedCategory === "Saved") {
       if (!user) {
@@ -105,9 +93,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
           filtered = filtered.filter(
-            (p) =>
-              p.title.toLowerCase().includes(q) ||
-              p.summary.toLowerCase().includes(q)
+            (p) => p.title.toLowerCase().includes(q) || p.summary.toLowerCase().includes(q)
           );
         }
         setPosts(filtered);
@@ -132,7 +118,6 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     }
 
     const abortController = new AbortController();
-
     const timer = setTimeout(async () => {
       setIsFiltering(true);
       try {
@@ -144,21 +129,14 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
         setCurrentTotalCount(data.totalCount);
         setHasMore(data.hasMore);
       } catch (err: unknown) {
-        if (err instanceof Error && err.name === "AbortError") {
-          return; // Ignore aborted in-flight requests
-        }
+        if (err instanceof Error && err.name === "AbortError") return;
         console.error("Filter error:", err);
       } finally {
-        if (!abortController.signal.aborted) {
-          setIsFiltering(false);
-        }
+        if (!abortController.signal.aborted) setIsFiltering(false);
       }
     }, searchQuery ? 250 : 0);
 
-    return () => {
-      clearTimeout(timer);
-      abortController.abort();
-    };
+    return () => { clearTimeout(timer); abortController.abort(); };
   }, [selectedCategory, selectedCompanyId, searchQuery, initialPosts, totalCount, user, fetchSavedPosts]);
 
   const loadMorePosts = async () => {
@@ -178,9 +156,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
           return isGeneral ? interleavePostsByCompany(combined, 2) : combined;
         });
         setHasMore(data.hasMore);
-        if (data.totalCount !== undefined) {
-          setCurrentTotalCount(data.totalCount);
-        }
+        if (data.totalCount !== undefined) setCurrentTotalCount(data.totalCount);
       } else {
         setHasMore(false);
       }
@@ -190,8 +166,6 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
       setIsLoadingMore(false);
     }
   };
-
-
 
   const handleSync = async () => {
     setIsSyncing(true);
@@ -218,86 +192,80 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     <div className="w-full space-y-5">
       {/* Category Pills & Company Filter Row */}
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 font-mono text-xs">
-            {CATEGORIES.map((category) => {
-              const isActive = selectedCategory === category;
-              const isSaved = category === "Saved";
+        <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 font-mono text-xs sm:pb-0">
+          {CATEGORIES.map((category) => {
+            const isActive = selectedCategory === category;
+            const isSaved = category === "Saved";
 
-              return (
-                <button
-                  key={category}
-                  onClick={() => {
-                    if (isSaved && !user) {
-                      openLoginModal();
-                    } else {
-                      setSelectedCategory(category);
-                    }
-                  }}
-                  className={`inline-flex h-7 shrink-0 cursor-pointer items-center justify-center gap-1.5 border px-3 text-xs uppercase whitespace-nowrap transition-colors duration-100 ${
-                    isActive
-                      ? "border-white bg-white font-bold text-black"
-                      : "border-white/20 bg-black text-white/70 hover:border-white/50 hover:text-white"
-                  }`}
-                >
-                  {isSaved && (
-                    <Bookmark
-                      className={`h-3 w-3 ${
-                        isActive
-                          ? "fill-black text-black"
-                          : bookmarkCount > 0
-                          ? "fill-white text-white"
-                          : "text-white/70"
-                      }`}
-                    />
-                  )}
-                  <span>
-                    {category}
-                    {isSaved && user && bookmarkCount > 0 ? ` (${bookmarkCount})` : ""}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Company Quick Filter Dropdown */}
-          <div className="flex shrink-0 items-center gap-2 self-start sm:self-auto font-mono text-xs">
-            <span className="text-white/50 uppercase">
-              Source:
-            </span>
-            <select
-              value={selectedCompanyId}
-              onChange={(e) => setSelectedCompanyId(e.target.value)}
-              className="h-7 cursor-pointer border border-white/25 bg-black px-2 font-mono text-xs text-white focus:border-white focus:outline-none"
-            >
-              <option value="all">All Companies</option>
-              {companies
-                .filter((c) => c.post_count === undefined || c.post_count >= 2)
-                .map((c) => (
-                  <option key={c.id} value={c.id} className="bg-black text-white">
-                    {c.name}
-                  </option>
-                ))}
-            </select>
-          </div>
+            return (
+              <button
+                key={category}
+                onClick={() => {
+                  if (isSaved && !user) openLoginModal();
+                  else setSelectedCategory(category);
+                }}
+                className={`inline-flex h-7 shrink-0 cursor-pointer items-center justify-center gap-1.5 border px-3 text-xs font-bold uppercase whitespace-nowrap transition-colors duration-100 ${
+                  isActive
+                    ? "border-neutral-950 bg-neutral-950 text-white dark:border-white dark:bg-white dark:text-black"
+                    : "border-neutral-950/20 bg-white text-neutral-950/70 hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-black dark:text-white/70 dark:hover:border-white/50 dark:hover:text-white"
+                }`}
+              >
+                {isSaved && (
+                  <Bookmark
+                    className={`h-3 w-3 ${
+                      isActive
+                        ? "fill-current"
+                        : bookmarkCount > 0
+                        ? "fill-current"
+                        : ""
+                    }`}
+                  />
+                )}
+                <span>
+                  {category}
+                  {isSaved && user && bookmarkCount > 0 ? ` (${bookmarkCount})` : ""}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-      {/* Feed Status / Post Count & Sync Action */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/15 px-1 pb-2 font-mono text-xs text-white/60">
+        {/* Company Dropdown */}
+        <div className="flex shrink-0 items-center gap-2 self-start font-mono text-xs sm:self-auto">
+          <span className="uppercase text-neutral-950/50 dark:text-white/50">Source:</span>
+          <select
+            value={selectedCompanyId}
+            onChange={(e) => setSelectedCompanyId(e.target.value)}
+            className="h-7 cursor-pointer border border-neutral-950/25 bg-white px-2 font-mono text-xs text-neutral-950 focus:border-neutral-950 focus:outline-none dark:border-white/25 dark:bg-black dark:text-white dark:focus:border-white"
+          >
+            <option value="all">All Companies</option>
+            {companies
+              .filter((c) => c.post_count === undefined || c.post_count >= 2)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Feed Status & Sync */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-950/15 px-1 pb-2 font-mono text-xs text-neutral-950/60 dark:border-white/15 dark:text-white/60">
         <div className="flex items-center gap-3">
           <span>
-            |← SHOWING <span className="font-bold text-white">{posts.length}</span>
+            |← SHOWING <span className="font-bold text-neutral-950 dark:text-white">{posts.length}</span>
             {currentTotalCount && currentTotalCount > posts.length ? (
               <span>
-                {" "}
-                OF <span className="font-bold text-white">{currentTotalCount.toLocaleString()}</span>
+                {" "}OF <span className="font-bold text-neutral-950 dark:text-white">{currentTotalCount.toLocaleString()}</span>
               </span>
             ) : null}{" "}
             {posts.length === 1 ? "ARTICLE" : "ARTICLES"} →|
           </span>
 
           {isFiltering && (
-            <span className="inline-flex items-center gap-1.5 text-[11px] text-white/70">
-              <RefreshCw className="h-2.5 w-2.5 animate-spin text-white" />
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-neutral-950/70 dark:text-white/70">
+              <RefreshCw className="h-2.5 w-2.5 animate-spin text-neutral-950 dark:text-white" />
               <span>Querying...</span>
             </span>
           )}
@@ -305,17 +273,15 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
           <button
             onClick={handleSync}
             disabled={isSyncing}
-            className="inline-flex cursor-pointer items-center gap-1.5 border border-white/25 bg-black px-2 py-0.5 text-[10px] text-white/80 transition-all hover:border-white hover:bg-white hover:text-black disabled:opacity-50"
+            className="inline-flex cursor-pointer items-center gap-1.5 border border-neutral-950/25 bg-white px-2 py-0.5 text-[10px] text-neutral-950/80 transition-all hover:border-neutral-950 hover:bg-neutral-950 hover:text-white disabled:opacity-50 dark:border-white/25 dark:bg-black dark:text-white/80 dark:hover:border-white dark:hover:bg-white dark:hover:text-black"
             title="Scan company feeds for new technical posts"
           >
-            <RefreshCw
-              className={`h-2.5 w-2.5 ${isSyncing ? "animate-spin text-white" : ""}`}
-            />
+            <RefreshCw className={`h-2.5 w-2.5 ${isSyncing ? "animate-spin" : ""}`} />
             <span>{isSyncing ? "Syncing..." : "Sync Feeds"}</span>
           </button>
 
           {syncFeedback && (
-            <span className="inline-flex items-center gap-1 text-[11px] text-white">
+            <span className="inline-flex items-center gap-1 text-[11px] text-neutral-950 dark:text-white">
               <Check className="h-3 w-3" />
               <span>{syncFeedback}</span>
             </span>
@@ -329,14 +295,14 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               setSelectedCompanyId("all");
               setSearchQuery("");
             }}
-            className="flex cursor-pointer items-center gap-1 text-white/60 transition-colors hover:text-white underline"
+            className="flex cursor-pointer items-center gap-1 text-neutral-950/60 underline transition-colors hover:text-neutral-950 dark:text-white/60 dark:hover:text-white"
           >
             Reset filters
           </button>
         )}
       </div>
 
-      {/* Single-Column List Feed */}
+      {/* Post List */}
       <div className={`flex flex-col space-y-3.5 transition-opacity duration-150 ${isFiltering ? "opacity-50" : "opacity-100"}`}>
         <AnimatePresence mode="popLayout">
           {posts.length > 0 ? (
@@ -356,33 +322,31 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
-              className="w-full border border-dashed border-white/25 bg-black px-6 py-16 text-center font-mono"
+              className="w-full border border-dashed border-neutral-950/25 bg-white px-6 py-16 text-center font-mono dark:border-white/25 dark:bg-black"
             >
               {selectedCategory === "Saved" ? (
                 <>
-                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center border border-white/25 bg-black text-white/50">
+                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center border border-neutral-950/25 bg-[#f4f3ef] text-neutral-950/50 dark:border-white/25 dark:bg-black dark:text-white/50">
                     <Bookmark className="h-5 w-5" />
                   </div>
-                  <h3 className="text-sm font-medium text-white">No saved articles yet</h3>
-                  <p className="mx-auto mt-1 max-w-sm text-xs text-white/60 leading-relaxed">
+                  <h3 className="text-sm font-medium text-neutral-950 dark:text-white">No saved articles yet</h3>
+                  <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-neutral-950/60 dark:text-white/60">
                     Click the bookmark icon on any engineering post to save it to your personal library.
                   </p>
                   <button
-                    onClick={() => {
-                      setSelectedCategory("All");
-                    }}
-                    className="mt-4 cursor-pointer border border-white/40 bg-black px-3 py-1.5 text-xs text-white transition-colors hover:border-white hover:bg-white hover:text-black"
+                    onClick={() => setSelectedCategory("All")}
+                    className="mt-4 cursor-pointer border border-neutral-950/40 bg-white px-3 py-1.5 text-xs text-neutral-950 transition-colors hover:border-neutral-950 hover:bg-neutral-950 hover:text-white dark:border-white/40 dark:bg-black dark:text-white dark:hover:border-white dark:hover:bg-white dark:hover:text-black"
                   >
                     Browse Feed
                   </button>
                 </>
               ) : (
                 <>
-                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center border border-white/25 bg-black text-white/50">
+                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center border border-neutral-950/25 bg-[#f4f3ef] text-neutral-950/50 dark:border-white/25 dark:bg-black dark:text-white/50">
                     <Search className="h-5 w-5" />
                   </div>
-                  <h3 className="text-sm font-medium text-white">No matching technical logs</h3>
-                  <p className="mx-auto mt-1 max-w-sm text-xs text-white/60">
+                  <h3 className="text-sm font-medium text-neutral-950 dark:text-white">No matching technical logs</h3>
+                  <p className="mx-auto mt-1 max-w-sm text-xs text-neutral-950/60 dark:text-white/60">
                     No articles matched &quot;{searchQuery || selectedCategory}&quot;. Try broadening
                     your keywords or resetting category filters.
                   </p>
@@ -392,7 +356,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
                       setSelectedCompanyId("all");
                       setSearchQuery("");
                     }}
-                    className="mt-4 cursor-pointer border border-white/40 bg-black px-3 py-1.5 text-xs text-white transition-colors hover:border-white hover:bg-white hover:text-black"
+                    className="mt-4 cursor-pointer border border-neutral-950/40 bg-white px-3 py-1.5 text-xs text-neutral-950 transition-colors hover:border-neutral-950 hover:bg-neutral-950 hover:text-white dark:border-white/40 dark:bg-black dark:text-white dark:hover:border-white dark:hover:bg-white dark:hover:text-black"
                   >
                     Clear all filters
                   </button>
@@ -403,18 +367,18 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
         </AnimatePresence>
       </div>
 
-      {/* Show More Pill & End of Feed Indicator */}
-      <div className="flex flex-col items-center justify-center pt-8 pb-2">
+      {/* Show More / End of Feed */}
+      <div className="flex flex-col items-center justify-center pb-2 pt-8">
         {hasMore ? (
           <button
             type="button"
             onClick={loadMorePosts}
             disabled={isLoadingMore}
-            className="inline-flex h-9 min-w-36 cursor-pointer items-center justify-center border border-white bg-white px-7 font-mono text-xs font-bold tracking-wider text-black transition-all hover:bg-white/90 active:scale-98 disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex h-9 min-w-36 cursor-pointer items-center justify-center border border-neutral-950 bg-neutral-950 px-7 font-mono text-xs font-bold tracking-wider text-white transition-all hover:bg-neutral-800 active:scale-98 disabled:cursor-not-allowed disabled:opacity-70 dark:border-white dark:bg-white dark:text-black dark:hover:bg-white/90"
           >
             {isLoadingMore ? (
               <div
-                className="h-4 w-4 animate-spin rounded-full border-2 border-black/30 border-t-black"
+                className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white dark:border-black/30 dark:border-t-black"
                 role="status"
                 aria-label="Loading"
               />
@@ -423,7 +387,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
             )}
           </button>
         ) : posts.length > 0 ? (
-          <div className="font-mono text-[11px] text-white/40">
+          <div className="font-mono text-[11px] text-neutral-950/40 dark:text-white/40">
             End of feed ({posts.length} logs)
           </div>
         ) : null}

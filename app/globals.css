@@ -9,39 +9,38 @@
     "Liberation Mono", "Courier New", monospace;
 }
 
+/* ─── Custom dark variant — triggers on [data-theme="dark"] ancestor ─────── */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ─── Grid line colors: only these need CSS vars (used in complex gradients) */
 :root {
-  --background: #000000;
-  --foreground: #ffffff;
-  --cad-line: rgba(255, 255, 255, 0.2);
-  --cad-line-bright: rgba(255, 255, 255, 0.85);
-  --cad-guide: rgba(255, 255, 255, 0.04);
+  --grid-major: rgba(10, 10, 10, 0.055);
+  --grid-minor: rgba(10, 10, 10, 0.022);
+  --crosshair-color: #0a0a0a;
+  --cad-dim-line: rgba(10, 10, 10, 0.15);
+  --cad-dim-color: rgba(10, 10, 10, 0.45);
 }
 
+[data-theme="dark"] {
+  --grid-major: rgba(255, 255, 255, 0.045);
+  --grid-minor: rgba(255, 255, 255, 0.016);
+  --crosshair-color: #ffffff;
+  --cad-dim-line: rgba(255, 255, 255, 0.15);
+  --cad-dim-color: rgba(255, 255, 255, 0.45);
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
 body {
-  background-color: #000000;
-  color: #ffffff;
-  font-family: var(--font-sans);
   min-height: 100vh;
   background-image:
-    /* Major blueprint grid lines (every 60px) */
-    linear-gradient(to right, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.045) 1px, transparent 1px),
-    /* Minor blueprint subdivision lines (every 12px) */
-    linear-gradient(to right, rgba(255, 255, 255, 0.016) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.016) 1px, transparent 1px);
-  background-size:
-    60px 60px,
-    60px 60px,
-    12px 12px,
-    12px 12px;
+    linear-gradient(to right,  var(--grid-major) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-major) 1px, transparent 1px),
+    linear-gradient(to right,  var(--grid-minor) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-minor) 1px, transparent 1px);
+  background-size: 60px 60px, 60px 60px, 12px 12px, 12px 12px;
 }
 
-::selection {
-  background: #ffffff;
-  color: #000000;
-}
-
-/* CAD Crosshair Corner Markers (diagonals: top-left & bottom-right white crossing lines) */
+/* ─── CAD Crosshair Corner Markers ──────────────────────────────────────── */
 .cad-crosshair {
   position: relative;
 }
@@ -57,37 +56,27 @@ body {
   background-repeat: no-repeat;
 }
 
-/* Top-left diagonal: crisp white crossing arms extending 6px outside and 6px along borders */
 .cad-crosshair::before {
   top: -7px;
   left: -7px;
   background-image:
-    linear-gradient(to right, #ffffff, #ffffff),
-    linear-gradient(to bottom, #ffffff, #ffffff);
-  background-position:
-    0px 6px,
-    6px 0px;
-  background-size:
-    13px 1px,
-    1px 13px;
+    linear-gradient(to right,  var(--crosshair-color), var(--crosshair-color)),
+    linear-gradient(to bottom, var(--crosshair-color), var(--crosshair-color));
+  background-position: 0px 6px, 6px 0px;
+  background-size: 13px 1px, 1px 13px;
 }
 
-/* Bottom-right diagonal: crisp white crossing arms extending 6px outside and 6px along borders */
 .cad-crosshair::after {
   bottom: -7px;
   right: -7px;
   background-image:
-    linear-gradient(to right, #ffffff, #ffffff),
-    linear-gradient(to bottom, #ffffff, #ffffff);
-  background-position:
-    0px 6px,
-    6px 0px;
-  background-size:
-    13px 1px,
-    1px 13px;
+    linear-gradient(to right,  var(--crosshair-color), var(--crosshair-color)),
+    linear-gradient(to bottom, var(--crosshair-color), var(--crosshair-color));
+  background-position: 0px 6px, 6px 0px;
+  background-size: 13px 1px, 1px 13px;
 }
 
-/* Subtle CAD Dimension Ticker */
+/* ─── CAD Dimension Line ─────────────────────────────────────────────────── */
 .cad-dim-line {
   display: flex;
   align-items: center;
@@ -95,7 +84,7 @@ body {
   font-family: var(--font-mono);
   font-size: 10px;
   letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--cad-dim-color);
   text-transform: uppercase;
 }
 
@@ -104,32 +93,30 @@ body {
   content: "";
   flex: 1;
   height: 1px;
-  background-color: rgba(255, 255, 255, 0.15);
+  background-color: var(--cad-dim-line);
 }
 
-/* Smooth scrollbar */
-::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
-}
-::-webkit-scrollbar-track {
-  background: #000000;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 2px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.4);
+/* ─── Selection ──────────────────────────────────────────────────────────── */
+::selection {
+  background: #0a0a0a;
+  color: #f4f3ef;
 }
 
-/* Hide scrollbar utility */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-  width: 0px;
-  height: 0px;
+[data-theme="dark"] ::selection {
+  background: #ffffff;
+  color: #000000;
 }
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #f4f3ef; }
+::-webkit-scrollbar-thumb { background: rgba(10,10,10,0.2); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(10,10,10,0.4); }
+
+[data-theme="dark"] ::-webkit-scrollbar-track { background: #000; }
+[data-theme="dark"] ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); }
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.4); }
+
+/* ─── Utilities ──────────────────────────────────────────────────────────── */
+.no-scrollbar::-webkit-scrollbar { display: none; width: 0; height: 0; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }

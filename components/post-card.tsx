@@ -105,10 +105,9 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -6 }}
-      transition={{ duration: 0.2, delay: Math.min(index * 0.03, 0.25) }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.15 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       className="group cad-crosshair relative flex flex-col justify-between border border-neutral-950/20 bg-white p-4.5 transition-colors duration-150 hover:border-neutral-950/50 sm:p-5 dark:border-white/20 dark:bg-neutral-950 dark:hover:border-white/50"

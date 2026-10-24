@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "motion/react";
+
 import { Bookmark, ChevronDown } from "lucide-react";
 import { PostWithCompany, Company, CategoryFilter } from "@/lib/types";
 import { interleavePostsByCompany } from "@/lib/supabase";
@@ -46,12 +46,10 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const [currentTotalCount, setCurrentTotalCount] = useState<number | undefined>(totalCount);
 
   useEffect(() => {
-    if (selectedCategory !== "Saved") {
-      setPosts(initialPosts);
-      setCurrentTotalCount(totalCount);
-      if (totalCount) setHasMore(initialPosts.length < totalCount);
-    }
-  }, [initialPosts, totalCount, selectedCategory]);
+    setPosts(initialPosts);
+    setCurrentTotalCount(totalCount);
+    if (totalCount) setHasMore(initialPosts.length < totalCount);
+  }, [initialPosts, totalCount]);
 
   const buildQueryUrl = (offset: number, limit: number) => {
     const params = new URLSearchParams();
@@ -129,8 +127,8 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     }
 
     const abortController = new AbortController();
+    setIsFiltering(true);
     const timer = setTimeout(async () => {
-      setIsFiltering(true);
       try {
         const url = buildQueryUrl(0, 20);
         const res = await fetch(url, { signal: abortController.signal });
@@ -403,8 +401,21 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
       </div>
 
       {/* Post List */}
-      <div className={`flex flex-col space-y-3.5 transition-opacity duration-150 ${isFiltering ? "opacity-50" : "opacity-100"}`}>
-        <AnimatePresence mode="popLayout">
+      <div className="relative">
+        {/* Subtle CAD Scanline Indicator */}
+        <div
+          className={`absolute -top-2 left-0 right-0 h-[1.5px] overflow-hidden bg-neutral-950/10 transition-opacity duration-150 dark:bg-white/10 ${
+            isFiltering ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          <div className="cad-scanline-active h-full w-1/4 bg-neutral-950 dark:bg-white" />
+        </div>
+
+        <div
+          className={`flex flex-col space-y-3.5 transition-opacity duration-150 ${
+            isFiltering ? "opacity-40 pointer-events-none" : "opacity-100"
+          }`}
+        >
           {posts.length > 0 ? (
             posts.map((post, idx) => (
               <PostCard
@@ -418,12 +429,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               />
             ))
           ) : (
-            <motion.div
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              className="flex w-full justify-center py-12"
-            >
+            <div className="flex w-full justify-center py-12">
               <button
                 type="button"
                 onClick={() => {
@@ -438,9 +444,9 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
                   ? "NO SAVED ARTICLES YET"
                   : "NO ARTICLES MATCH CURRENT FILTERS"}
               </button>
-            </motion.div>
+            </div>
           )}
-        </AnimatePresence>
+        </div>
       </div>
 
       {/* Show More */}

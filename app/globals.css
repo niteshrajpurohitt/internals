@@ -16,6 +16,7 @@
 :root {
   --grid-major: rgba(10, 10, 10, 0.02);
   --grid-minor: rgba(10, 10, 10, 0.01);
+  --dot-grid: rgba(10, 10, 10, 0.065);
   --crosshair-color: #0a0a0a;
   --cad-dim-line: rgba(10, 10, 10, 0.15);
   --cad-dim-color: rgba(10, 10, 10, 0.45);
@@ -24,14 +25,14 @@
 [data-theme="dark"] {
   --grid-major: rgba(255, 255, 255, 0.045);
   --grid-minor: rgba(255, 255, 255, 0.016);
+  --dot-grid: rgba(255, 255, 255, 0.1);
   --crosshair-color: #ffffff;
   --cad-dim-line: rgba(255, 255, 255, 0.15);
   --cad-dim-color: rgba(255, 255, 255, 0.45);
 }
 
-/* ─── Base ───────────────────────────────────────────────────────────────── */
-body {
-  min-height: 100vh;
+/* ─── CAD Grid Layer with Smooth Hero Mask ─────────────────────────────────── */
+.cad-grid-layer {
   background-position: center top;
   background-image:
     linear-gradient(to right,  var(--grid-major) 1px, transparent 1px),
@@ -39,6 +40,13 @@ body {
     linear-gradient(to right,  var(--grid-minor) 1px, transparent 1px),
     linear-gradient(to bottom, var(--grid-minor) 1px, transparent 1px);
   background-size: 60px 60px, 60px 60px, 12px 12px, 12px 12px;
+  -webkit-mask-image: radial-gradient(ellipse 680px 290px at 50% 210px, transparent 35%, rgba(0, 0, 0, 0.45) 75%, black 100%);
+  mask-image: radial-gradient(ellipse 680px 290px at 50% 210px, transparent 35%, rgba(0, 0, 0, 0.45) 75%, black 100%);
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+body {
+  min-height: 100vh;
 }
 
 /* ─── CAD Corner Markers (Diagonal Corner Dots) ─────────────────────────── */

@@ -39,7 +39,7 @@ export function Header() {
           href="/"
           className="flex items-center gap-2 text-sm font-semibold tracking-tight text-neutral-950 dark:text-white"
         >
-          <Logo className="h-5 w-5 text-neutral-950 dark:text-white" />
+          <Logo className="h-4 w-4 text-neutral-950 dark:text-white" />
           <span className="font-mono text-sm font-bold tracking-tight">Internals</span>
         </Link>
 

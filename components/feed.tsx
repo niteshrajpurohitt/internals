@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 
-import { Bookmark, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { PostWithCompany, Company, CategoryFilter } from "@/lib/types";
 import { interleavePostsByCompany } from "@/lib/supabase";
 import { useSearch } from "@/lib/search-context";
@@ -244,23 +244,12 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
                 if (isSaved && !user) openLoginModal();
                 else setSelectedCategory(category);
               }}
-              className={`inline-flex h-7 shrink-0 cursor-pointer items-center justify-center gap-1.5 border px-3 text-xs font-bold uppercase whitespace-nowrap transition-colors duration-100 ${
+              className={`inline-flex h-7 shrink-0 cursor-pointer items-center justify-center border px-3 text-xs font-bold uppercase whitespace-nowrap transition-colors duration-100 ${
                 isActive
                   ? "border-neutral-950 bg-neutral-950 text-white dark:border-white dark:bg-white dark:text-black"
                   : "border-neutral-950/20 bg-white text-neutral-950/70 hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-black dark:text-white/70 dark:hover:border-white/50 dark:hover:text-white"
               }`}
             >
-              {isSaved && (
-                <Bookmark
-                  className={`h-3 w-3 ${
-                    isActive
-                      ? "fill-current"
-                      : bookmarkCount > 0
-                      ? "fill-current"
-                      : ""
-                  }`}
-                />
-              )}
               <span>
                 {category}
                 {isSaved && user && bookmarkCount > 0 ? ` (${bookmarkCount})` : ""}

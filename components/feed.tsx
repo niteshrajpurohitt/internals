@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, RefreshCw, Bookmark, ChevronDown, X } from "lucide-react";
+import { Bookmark, ChevronDown } from "lucide-react";
 import { PostWithCompany, Company, CategoryFilter } from "@/lib/types";
 import { interleavePostsByCompany } from "@/lib/supabase";
 import { useSearch } from "@/lib/search-context";
@@ -384,12 +384,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
             </div>
           </div>
 
-          {isFiltering && (
-            <span className="inline-flex items-center gap-1.5 text-[11px] text-neutral-950/70 dark:text-white/70">
-              <RefreshCw className="h-2.5 w-2.5 animate-spin text-neutral-950 dark:text-white" />
-              <span>Querying...</span>
-            </span>
-          )}
+
         </div>
 
         {(selectedCategory !== "All" || selectedCompanyId !== "all" || selectedDuration !== "all" || searchQuery) && (
@@ -424,58 +419,33 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
             ))
           ) : (
             <motion.div
-              initial={{ opacity: 0, scale: 0.98 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              className="w-full border border-dashed border-neutral-950/25 bg-white px-6 py-16 text-center font-mono dark:border-white/25 dark:bg-black"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="flex w-full justify-center py-12"
             >
-              {selectedCategory === "Saved" ? (
-                <>
-                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center border border-neutral-950/25 bg-[#f4f3ef] text-neutral-950/50 dark:border-white/25 dark:bg-black dark:text-white/50">
-                    <Bookmark className="h-5 w-5" />
-                  </div>
-                  <h3 className="text-sm font-medium text-neutral-950 dark:text-white">No saved articles yet</h3>
-                  <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-neutral-950/60 dark:text-white/60">
-                    Click the bookmark icon on any engineering post to save it to your personal library.
-                  </p>
-                  <button
-                    onClick={() => setSelectedCategory("All")}
-                    className="mt-4 cursor-pointer border border-neutral-950/40 bg-white px-3 py-1.5 text-xs text-neutral-950 transition-colors hover:border-neutral-950 hover:bg-neutral-950 hover:text-white dark:border-white/40 dark:bg-black dark:text-white dark:hover:border-white dark:hover:bg-white dark:hover:text-black"
-                  >
-                    Browse Feed
-                  </button>
-                </>
-              ) : (
-                <>
-                  <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center border border-neutral-950/25 bg-[#f4f3ef] text-neutral-950/50 dark:border-white/25 dark:bg-black dark:text-white/50">
-                    <Search className="h-5 w-5" />
-                  </div>
-                  <h3 className="text-sm font-medium text-neutral-950 dark:text-white">No matching technical logs</h3>
-                  <p className="mx-auto mt-1 max-w-sm text-xs text-neutral-950/60 dark:text-white/60">
-                    No articles matched &quot;{searchQuery || selectedCategory}&quot;. Try broadening
-                    your keywords or resetting category filters.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setSelectedCategory("All");
-                      setSelectedCompanyId("all");
-                      setSelectedDuration("all");
-                      setSearchQuery("");
-                    }}
-                    className="mt-4 cursor-pointer border border-neutral-950/40 bg-white px-3 py-1.5 text-xs text-neutral-950 transition-colors hover:border-neutral-950 hover:bg-neutral-950 hover:text-white dark:border-white/40 dark:bg-black dark:text-white dark:hover:border-white dark:hover:bg-white dark:hover:text-black"
-                  >
-                    Clear all filters
-                  </button>
-                </>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory("All");
+                  setSelectedCompanyId("all");
+                  setSelectedDuration("all");
+                  setSearchQuery("");
+                }}
+                className="inline-flex h-9 cursor-pointer items-center justify-center border border-neutral-950 bg-neutral-950 px-6 font-mono text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-neutral-800 active:scale-98 dark:border-white dark:bg-white dark:text-black dark:hover:bg-white/90"
+              >
+                {selectedCategory === "Saved"
+                  ? "NO SAVED ARTICLES YET"
+                  : "NO ARTICLES MATCH CURRENT FILTERS"}
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Show More / End of Feed */}
-      <div className="flex flex-col items-center justify-center pb-2 pt-8">
-        {hasMore ? (
+      {/* Show More */}
+      {hasMore && (
+        <div className="flex flex-col items-center justify-center pb-2 pt-8">
           <button
             type="button"
             onClick={loadMorePosts}
@@ -492,12 +462,8 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               <span>SHOW MORE</span>
             )}
           </button>
-        ) : posts.length > 0 ? (
-          <div className="font-mono text-[11px] text-neutral-950/40 dark:text-white/40">
-            End of feed ({posts.length} logs)
-          </div>
-        ) : null}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

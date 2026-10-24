@@ -130,7 +130,7 @@ export function Header() {
               </button>
 
               {isUserMenuOpen && (
-                <div className="cad-crosshair absolute right-0 z-50 mt-1.5 w-48 border border-neutral-950/25 bg-white p-2 shadow-2xl font-mono text-xs dark:border-white/25 dark:bg-neutral-950">
+                <div className="cad-crosshair absolute right-0 top-full z-50 mt-2 w-52 border border-neutral-950/25 bg-white p-2.5 shadow-2xl font-mono text-xs dark:border-white/25 dark:bg-neutral-950">
                   <div className="border-b border-neutral-950/10 px-2 py-1.5 dark:border-white/10">
                     <p className="truncate font-semibold text-neutral-950 dark:text-white">{displayName}</p>
                     <p className="truncate text-[10px] text-neutral-950/50 dark:text-white/50">{user.email}</p>

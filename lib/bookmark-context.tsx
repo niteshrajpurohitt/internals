@@ -44,7 +44,7 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
           .eq("user_id", user.id);
 
         if (!error && data && mounted) {
-          setBookmarkedPostIds(new Set(data.map((b) => b.post_id)));
+          setBookmarkedPostIds(new Set(data.map((b: { post_id: string }) => b.post_id)));
         }
       } catch (err) {
         console.warn("Failed to load user bookmarks:", err);

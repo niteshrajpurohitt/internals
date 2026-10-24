@@ -14,12 +14,13 @@ jobs:
     steps:
       - name: Trigger Feed Sync Endpoint
         run: |
-          # Use SYNC_URL from GitHub Secrets if configured, otherwise use fallback
           TARGET_URL="${{ secrets.SYNC_URL }}"
 
           if [ -z "$TARGET_URL" ]; then
-            # Default production target (update once your domain/Vercel URL is live)
-            TARGET_URL="https://internals.vercel.app/api/sync"
+            echo "ℹ️  No SYNC_URL configured yet."
+            echo "Once your site is live on Vercel or your custom domain, add 'SYNC_URL' in GitHub Repo Settings > Secrets (e.g. https://your-domain.com/api/sync)."
+            echo "Skipping sync for now until deployment is live."
+            exit 0
           fi
 
           echo "Triggering feed sync at: $TARGET_URL"
@@ -33,10 +34,3 @@ jobs:
 
           echo "HTTP Response Code: $HTTP_RESPONSE"
           cat response.txt || true
-
-          if [ "$HTTP_RESPONSE" -ge 200 ] && [ "$HTTP_RESPONSE" -lt 300 ]; then
-            echo "Feed sync completed successfully!"
-          else
-            echo "Notice: Sync endpoint responded with code $HTTP_RESPONSE."
-            echo "Make sure your production site is deployed and SYNC_URL secret is configured if using a custom domain."
-          fi

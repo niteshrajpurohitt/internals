@@ -311,7 +311,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               className={`inline-flex h-7 shrink-0 cursor-pointer items-center justify-center border px-3 text-xs font-bold uppercase whitespace-nowrap transition-colors duration-100 ${
                 isActive
                   ? "border-neutral-950 bg-neutral-950 text-white dark:border-white dark:bg-white dark:text-black"
-                  : "border-neutral-950/20 bg-white text-neutral-950/70 hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-black dark:text-white/70 dark:hover:border-white/50 dark:hover:text-white"
+                  : "border-neutral-950/20 bg-white text-neutral-950/70 hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-[#111111] dark:text-white/70 dark:hover:border-white/50 dark:hover:text-white"
               }`}
             >
               <span>
@@ -338,7 +338,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
                   setCompanyDropdownOpen((prev) => !prev);
                   setDurationDropdownOpen(false);
                 }}
-                className="inline-flex h-7 cursor-pointer items-center justify-between gap-1.5 border border-neutral-950/20 bg-white px-2.5 font-mono text-xs font-bold uppercase tracking-wider text-neutral-950/80 transition-colors duration-100 hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-black dark:text-white/80 dark:hover:border-white/50 dark:hover:text-white"
+                className="inline-flex h-7 cursor-pointer items-center justify-between gap-1.5 border border-neutral-950/20 bg-white px-2.5 font-mono text-xs font-bold uppercase tracking-wider text-neutral-950/80 transition-colors duration-100 hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-[#111111] dark:text-white/80 dark:hover:border-white/50 dark:hover:text-white"
               >
                 <span>{currentCompanyLabel}</span>
                 <ChevronDown
@@ -349,7 +349,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               </button>
 
               {companyDropdownOpen && (
-                <div className="absolute left-0 top-full z-50 mt-1 max-h-64 min-w-[200px] overflow-y-auto border border-neutral-950/25 bg-white py-1 shadow-lg font-mono text-xs uppercase dark:border-white/25 dark:bg-black">
+                <div className="absolute left-0 top-full z-50 mt-1 max-h-64 min-w-[200px] overflow-y-auto border border-neutral-950/25 bg-white py-1 shadow-lg font-mono text-xs uppercase dark:border-white/25 dark:bg-[#111111]">
                   <button
                     type="button"
                     onClick={() => {
@@ -400,7 +400,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
                   setDurationDropdownOpen((prev) => !prev);
                   setCompanyDropdownOpen(false);
                 }}
-                className="inline-flex h-7 cursor-pointer items-center justify-between gap-1.5 border border-neutral-950/20 bg-white px-2.5 font-mono text-xs font-bold uppercase tracking-wider text-neutral-950/80 transition-colors duration-100 hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-black dark:text-white/80 dark:hover:border-white/50 dark:hover:text-white"
+                className="inline-flex h-7 cursor-pointer items-center justify-between gap-1.5 border border-neutral-950/20 bg-white px-2.5 font-mono text-xs font-bold uppercase tracking-wider text-neutral-950/80 transition-colors duration-100 hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-[#111111] dark:text-white/80 dark:hover:border-white/50 dark:hover:text-white"
               >
                 <span>{currentDurationLabel}</span>
                 <ChevronDown
@@ -411,7 +411,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               </button>
 
               {durationDropdownOpen && (
-                <div className="absolute left-0 top-full z-50 mt-1 min-w-[130px] border border-neutral-950/25 bg-white py-1 shadow-lg font-mono text-xs uppercase dark:border-white/25 dark:bg-black">
+                <div className="absolute left-0 top-full z-50 mt-1 min-w-[130px] border border-neutral-950/25 bg-white py-1 shadow-lg font-mono text-xs uppercase dark:border-white/25 dark:bg-[#111111]">
                   {DURATION_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}

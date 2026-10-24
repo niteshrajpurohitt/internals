@@ -110,7 +110,7 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
       transition={{ duration: 0.15 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group cad-crosshair relative flex flex-col justify-between border border-neutral-950/20 bg-white p-4.5 transition-colors duration-150 hover:border-neutral-950/50 sm:p-5 dark:border-white/20 dark:bg-neutral-950 dark:hover:border-white/50"
+      className="group cad-crosshair relative flex flex-col justify-between border border-neutral-950/20 bg-white p-4.5 transition-colors duration-150 hover:border-neutral-950/50 sm:p-5 dark:border-white/20 dark:bg-[#111111] dark:hover:border-white/50"
     >
       <a
         href={post.source_url}
@@ -123,7 +123,7 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
         {/* Header row */}
         <div className="flex items-center justify-between gap-2 border-b border-neutral-950/15 pb-2.5 font-mono text-xs dark:border-white/15">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="border border-neutral-950/60 bg-[#f4f3ef] px-2 py-0.5 text-[11px] font-bold tracking-wider text-neutral-950 uppercase dark:border-white/60 dark:bg-black dark:text-white">
+            <span className="border border-neutral-950/60 bg-[#f4f3ef] px-2 py-0.5 text-[11px] font-bold tracking-wider text-neutral-950 uppercase dark:border-white/60 dark:bg-[#080808] dark:text-white">
               {companyName}
             </span>
 
@@ -157,7 +157,7 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
               className={`relative z-10 flex h-5 w-5 cursor-pointer items-center justify-center border transition-all ${
                 isSaved
                   ? "border-neutral-950 bg-neutral-950 text-white dark:border-white dark:bg-white dark:text-black"
-                  : "border-neutral-950/25 bg-white text-neutral-950/50 hover:border-neutral-950 hover:text-neutral-950 dark:border-white/25 dark:bg-black dark:text-white/50 dark:hover:border-white dark:hover:text-white"
+                  : "border-neutral-950/25 bg-white text-neutral-950/50 hover:border-neutral-950 hover:text-neutral-950 dark:border-white/25 dark:bg-[#080808] dark:text-white/50 dark:hover:border-white dark:hover:text-white"
               }`}
             >
               <Bookmark className={`h-2.5 w-2.5 ${isSaved ? "fill-current" : ""}`} />
@@ -165,7 +165,7 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
 
             {/* Launch tile */}
             <div className="relative h-5 w-5">
-              <div className="absolute inset-0 border border-neutral-950/40 bg-[#f4f3ef] dark:border-white/40 dark:bg-black" />
+              <div className="absolute inset-0 border border-neutral-950/40 bg-[#f4f3ef] dark:border-white/40 dark:bg-[#080808]" />
               <motion.span
                 initial={false}
                 animate={{
@@ -176,7 +176,7 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
                 className={`absolute inset-0 flex items-center justify-center border shadow-xs transition-colors ${
                   isHovered
                     ? "border-neutral-950 bg-neutral-950 text-white dark:border-white dark:bg-white dark:text-black"
-                    : "border-neutral-950/40 bg-white text-neutral-950/70 dark:border-white/40 dark:bg-black dark:text-white/70"
+                    : "border-neutral-950/40 bg-white text-neutral-950/70 dark:border-white/40 dark:bg-[#111111] dark:text-white/70"
                 }`}
               >
                 <ArrowUpRight className="h-3 w-3" />

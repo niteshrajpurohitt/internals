@@ -62,7 +62,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#f4f3ef] font-sans text-neutral-950 antialiased dark:bg-black dark:text-white">
+      <body className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#f4f3ef] font-sans text-neutral-950 antialiased dark:bg-[#080808] dark:text-white">
         {/* Masked CAD Drafting Grid Layer */}
         <div className="cad-grid-layer pointer-events-none fixed inset-0 z-0" aria-hidden="true" />
         <ThemeProvider>

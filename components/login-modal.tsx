@@ -71,12 +71,12 @@ export function LoginModal() {
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f3ef]/80 p-4 backdrop-blur-sm animate-in fade-in duration-150 dark:bg-black/80"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f3ef]/80 p-4 backdrop-blur-sm animate-in fade-in duration-150 dark:bg-[#080808]/85"
       onClick={handleClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="cad-crosshair relative w-full max-w-sm border border-neutral-950/25 bg-white px-5 pb-5 pt-2.5 sm:px-6 sm:pb-6 sm:pt-3 shadow-2xl dark:border-white/25 dark:bg-neutral-950"
+        className="cad-crosshair relative w-full max-w-sm border border-neutral-950/25 bg-white px-5 pb-5 pt-2.5 sm:px-6 sm:pb-6 sm:pt-3 shadow-2xl dark:border-white/25 dark:bg-[#111111]"
       >
         {/* Top Header: Close Button */}
         <div className="mb-2 flex justify-end">
@@ -90,7 +90,7 @@ export function LoginModal() {
         </div>
 
         {/* Top: Large Framed Logo Box */}
-        <div className="flex h-44 sm:h-52 w-full items-center justify-center border border-dashed border-neutral-950/20 bg-[#f4f3ef]/60 p-3 sm:p-4 dark:border-white/20 dark:bg-black/60">
+        <div className="flex h-44 sm:h-52 w-full items-center justify-center border border-dashed border-neutral-950/20 bg-[#f4f3ef]/60 p-3 sm:p-4 dark:border-white/20 dark:bg-[#080808]/70">
           <Logo className="h-full w-auto max-h-full max-w-full text-neutral-950 dark:text-white" />
         </div>
 

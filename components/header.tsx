@@ -31,7 +31,7 @@ export function Header() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-neutral-950/15 bg-[#f4f3ef]/90 backdrop-blur-md dark:border-white/15 dark:bg-black/90">
+    <header className="sticky top-0 z-40 w-full border-b border-neutral-950/15 bg-[#f4f3ef]/90 backdrop-blur-md dark:border-white/15 dark:bg-[#080808]/90">
       <Container size="default" className="flex h-13 items-center justify-between gap-4">
 
         {/* Brand */}
@@ -47,7 +47,7 @@ export function Header() {
         <div className="flex items-center gap-2.5 sm:gap-3">
 
           {/* Search */}
-          <div className="group relative flex h-7 w-28 items-center border border-neutral-950/20 bg-white font-mono text-[11px] transition-colors focus-within:border-neutral-950/50 sm:w-36 dark:border-white/20 dark:bg-black dark:focus-within:border-white/55">
+          <div className="group relative flex h-7 w-28 items-center border border-neutral-950/20 bg-white font-mono text-[11px] transition-colors focus-within:border-neutral-950/50 sm:w-36 dark:border-white/20 dark:bg-[#111111] dark:focus-within:border-white/55">
             <Search className="pointer-events-none ml-2 h-3 w-3 shrink-0 text-neutral-950/40 transition-colors group-focus-within:text-neutral-950/70 dark:text-white/40 dark:group-focus-within:text-white/80" />
             <input
               ref={inputRef}

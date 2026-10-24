@@ -43,3 +43,7 @@ next-env.d.ts
 # local documentation & private strategy
 ROADMAP*.md
 LAUNCH_STRATEGY.md
+
+# duplicate downloads
+* (*).*
+

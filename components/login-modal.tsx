@@ -8,9 +8,35 @@ export function LoginModal() {
   const { isLoginModalOpen, closeLoginModal, signInWithGithub, signInWithGoogle } = useAuth();
   const [loadingProvider, setLoadingProvider] = useState<"github" | "google" | null>(null);
 
+  // Reset loading state when modal opens or closes
+  useEffect(() => {
+    setLoadingProvider(null);
+  }, [isLoginModalOpen]);
+
+  // Handle browser Back/Forward navigation cache (bfcache)
+  useEffect(() => {
+    const handlePageShow = () => {
+      setLoadingProvider(null);
+    };
+    window.addEventListener("pageshow", handlePageShow);
+    return () => window.removeEventListener("pageshow", handlePageShow);
+  }, []);
+
+  // Safety timeout: auto-reset loading state if navigation doesn't occur or user returns
+  useEffect(() => {
+    if (!loadingProvider) return;
+    const timer = setTimeout(() => {
+      setLoadingProvider(null);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [loadingProvider]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && isLoginModalOpen) closeLoginModal();
+      if (e.key === "Escape" && isLoginModalOpen) {
+        setLoadingProvider(null);
+        closeLoginModal();
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
@@ -18,14 +44,27 @@ export function LoginModal() {
 
   if (!isLoginModalOpen) return null;
 
+  const handleClose = () => {
+    setLoadingProvider(null);
+    closeLoginModal();
+  };
+
   const handleGithub = async () => {
-    try { setLoadingProvider("github"); await signInWithGithub(); }
-    catch { setLoadingProvider(null); }
+    try {
+      setLoadingProvider("github");
+      await signInWithGithub();
+    } catch {
+      setLoadingProvider(null);
+    }
   };
 
   const handleGoogle = async () => {
-    try { setLoadingProvider("google"); await signInWithGoogle(); }
-    catch { setLoadingProvider(null); }
+    try {
+      setLoadingProvider("google");
+      await signInWithGoogle();
+    } catch {
+      setLoadingProvider(null);
+    }
   };
 
   return (
@@ -33,7 +72,7 @@ export function LoginModal() {
       role="dialog"
       aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f3ef]/80 p-4 backdrop-blur-sm animate-in fade-in duration-150 dark:bg-black/80"
-      onClick={closeLoginModal}
+      onClick={handleClose}
     >
       <div
         onClick={(e) => e.stopPropagation()}
@@ -50,7 +89,7 @@ export function LoginModal() {
             </span>
           </div>
           <button
-            onClick={closeLoginModal}
+            onClick={handleClose}
             aria-label="Close dialog"
             className="text-neutral-950/50 transition-opacity hover:opacity-80 dark:text-white/50"
           >

@@ -1,0 +1,42 @@
+name: Sync Engineering Feeds
+
+on:
+  schedule:
+    # Runs every 6 hours (00:00, 06:00, 12:00, 18:00 UTC)
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allows manual 1-click trigger from GitHub Actions tab anytime
+
+jobs:
+  sync:
+    name: Sync RSS Feeds to Supabase
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Feed Sync Endpoint
+        run: |
+          # Use SYNC_URL from GitHub Secrets if configured, otherwise use fallback
+          TARGET_URL="${{ secrets.SYNC_URL }}"
+
+          if [ -z "$TARGET_URL" ]; then
+            # Default production target (update once your domain/Vercel URL is live)
+            TARGET_URL="https://internals.vercel.app/api/sync"
+          fi
+
+          echo "Triggering feed sync at: $TARGET_URL"
+
+          # Call the sync endpoint with optional SYNC_SECRET header
+          HTTP_RESPONSE=$(curl -s -o response.txt -w "%{http_code}" -X POST \
+            -H "Authorization: Bearer ${{ secrets.SYNC_SECRET }}" \
+            -H "Content-Type: application/json" \
+            --max-time 60 \
+            "$TARGET_URL" || true)
+
+          echo "HTTP Response Code: $HTTP_RESPONSE"
+          cat response.txt || true
+
+          if [ "$HTTP_RESPONSE" -ge 200 ] && [ "$HTTP_RESPONSE" -lt 300 ]; then
+            echo "Feed sync completed successfully!"
+          else
+            echo "Notice: Sync endpoint responded with code $HTTP_RESPONSE."
+            echo "Make sure your production site is deployed and SYNC_URL secret is configured if using a custom domain."
+          fi

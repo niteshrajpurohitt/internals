@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { X } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/logo";
 
@@ -77,16 +76,16 @@ export function LoginModal() {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="cad-crosshair relative w-full max-w-sm border border-neutral-950/25 bg-white p-5 sm:p-6 shadow-2xl dark:border-white/25 dark:bg-neutral-950"
+        className="cad-crosshair relative w-full max-w-sm border border-neutral-950/25 bg-white px-5 pb-5 pt-2.5 sm:px-6 sm:pb-6 sm:pt-3 shadow-2xl dark:border-white/25 dark:bg-neutral-950"
       >
         {/* Top Header: Close Button */}
         <div className="mb-2 flex justify-end">
           <button
+            type="button"
             onClick={handleClose}
-            aria-label="Close dialog"
-            className="cursor-pointer rounded-xs p-1 text-neutral-950/50 transition-colors hover:text-neutral-950 dark:text-white/50 dark:hover:text-white"
+            className="cursor-pointer font-mono text-xs leading-none text-neutral-950/60 transition-colors hover:text-neutral-950 dark:text-white/60 dark:hover:text-white"
           >
-            <X className="pointer-events-none h-4 w-4" />
+            Close
           </button>
         </div>
 

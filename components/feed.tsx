@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, RefreshCw, Bookmark } from "lucide-react";
+import { Search, RefreshCw, Bookmark, ChevronDown, X } from "lucide-react";
 import { PostWithCompany, Company, CategoryFilter } from "@/lib/types";
 import { interleavePostsByCompany } from "@/lib/supabase";
 import { useSearch } from "@/lib/search-context";
@@ -178,6 +178,59 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     }
   };
 
+  const [companyDropdownOpen, setCompanyDropdownOpen] = useState(false);
+  const [durationDropdownOpen, setDurationDropdownOpen] = useState(false);
+  const companyDropdownRef = useRef<HTMLDivElement>(null);
+  const durationDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (companyDropdownRef.current && !companyDropdownRef.current.contains(event.target as Node)) {
+        setCompanyDropdownOpen(false);
+      }
+      if (durationDropdownRef.current && !durationDropdownRef.current.contains(event.target as Node)) {
+        setDurationDropdownOpen(false);
+      }
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setCompanyDropdownOpen(false);
+        setDurationDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
+
+  const DURATION_OPTIONS = useMemo(
+    () => [
+      { value: "all", label: "ALL" },
+      { value: "quick", label: "< 5 MIN" },
+      { value: "standard", label: "5 – 10 MIN" },
+      { value: "long", label: "10+ MIN" },
+    ],
+    []
+  );
+
+  const currentCompanyLabel = useMemo(() => {
+    if (selectedCompanyId === "all") return "ALL";
+    const found = companies.find((c) => c.id === selectedCompanyId);
+    return found ? found.name.toUpperCase() : "ALL";
+  }, [selectedCompanyId, companies]);
+
+  const currentDurationLabel = useMemo(() => {
+    const found = DURATION_OPTIONS.find((d) => d.value === selectedDuration);
+    return found ? found.label : "ALL";
+  }, [selectedDuration, DURATION_OPTIONS]);
+
+  const eligibleCompanies = useMemo(() => {
+    return companies.filter((c) => c.post_count === undefined || c.post_count >= 2);
+  }, [companies]);
+
   return (
     <div className="w-full space-y-5">
       {/* Category Pills (Row 1: Full-width horizontal scroll) */}
@@ -220,40 +273,115 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
       </div>
 
       {/* Sub-Filters: Company & Duration */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-950/15 pb-3 font-mono text-xs dark:border-white/15">
+      <div className="flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
         <div className="flex flex-wrap items-center gap-3">
           {/* Company Dropdown */}
-          <div className="flex items-center gap-1.5">
-            <span className="uppercase text-neutral-950/50 dark:text-white/50">Company:</span>
-            <select
-              value={selectedCompanyId}
-              onChange={(e) => setSelectedCompanyId(e.target.value)}
-              className="h-7 cursor-pointer border border-neutral-950/25 bg-white px-2 font-mono text-xs text-neutral-950 focus:border-neutral-950 focus:outline-none dark:border-white/25 dark:bg-black dark:text-white dark:focus:border-white"
-            >
-              <option value="all">All</option>
-              {companies
-                .filter((c) => c.post_count === undefined || c.post_count >= 2)
-                .map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-            </select>
+          <div className="flex items-center gap-1.5" ref={companyDropdownRef}>
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-neutral-950/60 dark:text-white/60">
+              Company:
+            </span>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setCompanyDropdownOpen((prev) => !prev);
+                  setDurationDropdownOpen(false);
+                }}
+                className="inline-flex h-7 cursor-pointer items-center justify-between gap-1.5 border border-neutral-950/20 bg-white px-2.5 font-mono text-xs font-bold uppercase tracking-wider text-neutral-950/80 transition-colors duration-100 hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-black dark:text-white/80 dark:hover:border-white/50 dark:hover:text-white"
+              >
+                <span>{currentCompanyLabel}</span>
+                <ChevronDown
+                  className={`h-3 w-3 shrink-0 text-neutral-950/60 transition-transform duration-150 dark:text-white/60 ${
+                    companyDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {companyDropdownOpen && (
+                <div className="absolute left-0 top-full z-50 mt-1 max-h-64 min-w-[200px] overflow-y-auto border border-neutral-950/25 bg-white py-1 shadow-lg font-mono text-xs uppercase dark:border-white/25 dark:bg-black">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedCompanyId("all");
+                      setCompanyDropdownOpen(false);
+                    }}
+                    className={`flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left font-bold transition-colors ${
+                      selectedCompanyId === "all"
+                        ? "bg-neutral-950 text-white dark:bg-white dark:text-black"
+                        : "text-neutral-950/80 hover:bg-neutral-950/5 dark:text-white/80 dark:hover:bg-white/5"
+                    }`}
+                  >
+                    <span>ALL</span>
+                    {selectedCompanyId === "all" && <span className="text-[10px]">●</span>}
+                  </button>
+                  {eligibleCompanies.map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCompanyId(c.id);
+                        setCompanyDropdownOpen(false);
+                      }}
+                      className={`flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left font-bold transition-colors ${
+                        selectedCompanyId === c.id
+                          ? "bg-neutral-950 text-white dark:bg-white dark:text-black"
+                          : "text-neutral-950/80 hover:bg-neutral-950/5 dark:text-white/80 dark:hover:bg-white/5"
+                      }`}
+                    >
+                      <span className="truncate pr-2">{c.name.toUpperCase()}</span>
+                      {selectedCompanyId === c.id && <span className="shrink-0 text-[10px]">●</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Duration Dropdown */}
-          <div className="flex items-center gap-1.5">
-            <span className="uppercase text-neutral-950/50 dark:text-white/50">Duration:</span>
-            <select
-              value={selectedDuration}
-              onChange={(e) => setSelectedDuration(e.target.value)}
-              className="h-7 cursor-pointer border border-neutral-950/25 bg-white px-2 font-mono text-xs text-neutral-950 focus:border-neutral-950 focus:outline-none dark:border-white/25 dark:bg-black dark:text-white dark:focus:border-white"
-            >
-              <option value="all">All</option>
-              <option value="quick">&lt; 5 min</option>
-              <option value="standard">5 – 10 min</option>
-              <option value="long">10+ min</option>
-            </select>
+          <div className="flex items-center gap-1.5" ref={durationDropdownRef}>
+            <span className="font-mono text-xs font-bold uppercase tracking-wider text-neutral-950/60 dark:text-white/60">
+              Duration:
+            </span>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => {
+                  setDurationDropdownOpen((prev) => !prev);
+                  setCompanyDropdownOpen(false);
+                }}
+                className="inline-flex h-7 cursor-pointer items-center justify-between gap-1.5 border border-neutral-950/20 bg-white px-2.5 font-mono text-xs font-bold uppercase tracking-wider text-neutral-950/80 transition-colors duration-100 hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-black dark:text-white/80 dark:hover:border-white/50 dark:hover:text-white"
+              >
+                <span>{currentDurationLabel}</span>
+                <ChevronDown
+                  className={`h-3 w-3 shrink-0 text-neutral-950/60 transition-transform duration-150 dark:text-white/60 ${
+                    durationDropdownOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              {durationDropdownOpen && (
+                <div className="absolute left-0 top-full z-50 mt-1 min-w-[130px] border border-neutral-950/25 bg-white py-1 shadow-lg font-mono text-xs uppercase dark:border-white/25 dark:bg-black">
+                  {DURATION_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedDuration(opt.value);
+                        setDurationDropdownOpen(false);
+                      }}
+                      className={`flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left font-bold transition-colors ${
+                        selectedDuration === opt.value
+                          ? "bg-neutral-950 text-white dark:bg-white dark:text-black"
+                          : "text-neutral-950/80 hover:bg-neutral-950/5 dark:text-white/80 dark:hover:bg-white/5"
+                      }`}
+                    >
+                      <span>{opt.label}</span>
+                      {selectedDuration === opt.value && <span className="text-[10px]">●</span>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {isFiltering && (

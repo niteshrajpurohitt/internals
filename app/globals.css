@@ -14,8 +14,8 @@
 
 /* ─── Grid line colors: only these need CSS vars (used in complex gradients) */
 :root {
-  --grid-major: rgba(10, 10, 10, 0.055);
-  --grid-minor: rgba(10, 10, 10, 0.022);
+  --grid-major: rgba(10, 10, 10, 0.02);
+  --grid-minor: rgba(10, 10, 10, 0.01);
   --crosshair-color: #0a0a0a;
   --cad-dim-line: rgba(10, 10, 10, 0.15);
   --cad-dim-color: rgba(10, 10, 10, 0.45);

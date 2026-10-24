@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
-import { Search, RefreshCw, Check, Bookmark } from "lucide-react";
+import { Search, RefreshCw, Bookmark } from "lucide-react";
 import { PostWithCompany, Company, CategoryFilter } from "@/lib/types";
 import { interleavePostsByCompany } from "@/lib/supabase";
 import { useSearch } from "@/lib/search-context";
@@ -31,7 +30,6 @@ const CATEGORIES: CategoryFilter[] = [
 ];
 
 export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
-  const router = useRouter();
   const { searchQuery, setSearchQuery } = useSearch();
   const { user, openLoginModal } = useAuth();
   const { bookmarkCount, fetchSavedPosts, bookmarkedPostIds } = useBookmarks();
@@ -44,8 +42,6 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("All");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("all");
   const [selectedDuration, setSelectedDuration] = useState<string>("all");
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
   const [isFiltering, setIsFiltering] = useState(false);
   const [currentTotalCount, setCurrentTotalCount] = useState<number | undefined>(totalCount);
 
@@ -182,73 +178,52 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     }
   };
 
-  const handleSync = async () => {
-    setIsSyncing(true);
-    setSyncFeedback(null);
-    try {
-      const res = await fetch("/api/sync", { method: "POST" });
-      const data = await res.json();
-      if (data.success) {
-        const added = data.stats?.new_posts_added ?? 0;
-        setSyncFeedback(added > 0 ? `Synced +${added} new posts!` : "All feeds up to date");
-        router.refresh();
-      } else {
-        setSyncFeedback(data.details || "Sync completed");
-      }
-    } catch {
-      setSyncFeedback("Sync failed");
-    } finally {
-      setIsSyncing(false);
-      setTimeout(() => setSyncFeedback(null), 5000);
-    }
-  };
-
   return (
     <div className="w-full space-y-5">
-      {/* Category Pills & Company Filter Row */}
-      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-        <div className="no-scrollbar flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto pb-1 font-mono text-xs sm:pb-0">
-          {CATEGORIES.map((category) => {
-            const isActive = selectedCategory === category;
-            const isSaved = category === "Saved";
+      {/* Category Pills (Row 1: Full-width horizontal scroll) */}
+      <div className="no-scrollbar flex w-full items-center gap-1.5 overflow-x-auto pb-1 font-mono text-xs">
+        {CATEGORIES.map((category) => {
+          const isActive = selectedCategory === category;
+          const isSaved = category === "Saved";
 
-            return (
-              <button
-                key={category}
-                onClick={() => {
-                  if (isSaved && !user) openLoginModal();
-                  else setSelectedCategory(category);
-                }}
-                className={`inline-flex h-7 shrink-0 cursor-pointer items-center justify-center gap-1.5 border px-3 text-xs font-bold uppercase whitespace-nowrap transition-colors duration-100 ${
-                  isActive
-                    ? "border-neutral-950 bg-neutral-950 text-white dark:border-white dark:bg-white dark:text-black"
-                    : "border-neutral-950/20 bg-white text-neutral-950/70 hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-black dark:text-white/70 dark:hover:border-white/50 dark:hover:text-white"
-                }`}
-              >
-                {isSaved && (
-                  <Bookmark
-                    className={`h-3 w-3 ${
-                      isActive
-                        ? "fill-current"
-                        : bookmarkCount > 0
-                        ? "fill-current"
-                        : ""
-                    }`}
-                  />
-                )}
-                <span>
-                  {category}
-                  {isSaved && user && bookmarkCount > 0 ? ` (${bookmarkCount})` : ""}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+          return (
+            <button
+              key={category}
+              onClick={() => {
+                if (isSaved && !user) openLoginModal();
+                else setSelectedCategory(category);
+              }}
+              className={`inline-flex h-7 shrink-0 cursor-pointer items-center justify-center gap-1.5 border px-3 text-xs font-bold uppercase whitespace-nowrap transition-colors duration-100 ${
+                isActive
+                  ? "border-neutral-950 bg-neutral-950 text-white dark:border-white dark:bg-white dark:text-black"
+                  : "border-neutral-950/20 bg-white text-neutral-950/70 hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-black dark:text-white/70 dark:hover:border-white/50 dark:hover:text-white"
+              }`}
+            >
+              {isSaved && (
+                <Bookmark
+                  className={`h-3 w-3 ${
+                    isActive
+                      ? "fill-current"
+                      : bookmarkCount > 0
+                      ? "fill-current"
+                      : ""
+                  }`}
+                />
+              )}
+              <span>
+                {category}
+                {isSaved && user && bookmarkCount > 0 ? ` (${bookmarkCount})` : ""}
+              </span>
+            </button>
+          );
+        })}
+      </div>
 
-        {/* Dropdowns: Company & Duration */}
-        <div className="flex flex-wrap items-center gap-3 font-mono text-xs">
+      {/* Sub-Filters: Company & Duration */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-950/15 pb-3 font-mono text-xs dark:border-white/15">
+        <div className="flex flex-wrap items-center gap-3">
           {/* Company Dropdown */}
-          <div className="flex shrink-0 items-center gap-1.5 self-start sm:self-auto">
+          <div className="flex items-center gap-1.5">
             <span className="uppercase text-neutral-950/50 dark:text-white/50">Company:</span>
             <select
               value={selectedCompanyId}
@@ -267,7 +242,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
           </div>
 
           {/* Duration Dropdown */}
-          <div className="flex shrink-0 items-center gap-1.5 self-start sm:self-auto">
+          <div className="flex items-center gap-1.5">
             <span className="uppercase text-neutral-950/50 dark:text-white/50">Duration:</span>
             <select
               value={selectedDuration}
@@ -280,21 +255,6 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               <option value="long">10+ min</option>
             </select>
           </div>
-        </div>
-      </div>
-
-      {/* Feed Status & Sync */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-neutral-950/15 px-1 pb-2 font-mono text-xs text-neutral-950/60 dark:border-white/15 dark:text-white/60">
-        <div className="flex items-center gap-3">
-          <span>
-            |← SHOWING <span className="font-bold text-neutral-950 dark:text-white">{posts.length}</span>
-            {currentTotalCount && currentTotalCount > posts.length ? (
-              <span>
-                {" "}OF <span className="font-bold text-neutral-950 dark:text-white">{currentTotalCount.toLocaleString()}</span>
-              </span>
-            ) : null}{" "}
-            {posts.length === 1 ? "ARTICLE" : "ARTICLES"} →|
-          </span>
 
           {isFiltering && (
             <span className="inline-flex items-center gap-1.5 text-[11px] text-neutral-950/70 dark:text-white/70">
@@ -302,30 +262,14 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               <span>Querying...</span>
             </span>
           )}
-
-          <button
-            onClick={handleSync}
-            disabled={isSyncing}
-            className="inline-flex cursor-pointer items-center gap-1.5 border border-neutral-950/25 bg-white px-2 py-0.5 text-[10px] text-neutral-950/80 transition-all hover:border-neutral-950 hover:bg-neutral-950 hover:text-white disabled:opacity-50 dark:border-white/25 dark:bg-black dark:text-white/80 dark:hover:border-white dark:hover:bg-white dark:hover:text-black"
-            title="Scan company feeds for new technical posts"
-          >
-            <RefreshCw className={`h-2.5 w-2.5 ${isSyncing ? "animate-spin" : ""}`} />
-            <span>{isSyncing ? "Syncing..." : "Sync Feeds"}</span>
-          </button>
-
-          {syncFeedback && (
-            <span className="inline-flex items-center gap-1 text-[11px] text-neutral-950 dark:text-white">
-              <Check className="h-3 w-3" />
-              <span>{syncFeedback}</span>
-            </span>
-          )}
         </div>
 
-        {(selectedCategory !== "All" || selectedCompanyId !== "all" || searchQuery) && (
+        {(selectedCategory !== "All" || selectedCompanyId !== "all" || selectedDuration !== "all" || searchQuery) && (
           <button
             onClick={() => {
               setSelectedCategory("All");
               setSelectedCompanyId("all");
+              setSelectedDuration("all");
               setSearchQuery("");
             }}
             className="flex cursor-pointer items-center gap-1 text-neutral-950/60 underline transition-colors hover:text-neutral-950 dark:text-white/60 dark:hover:text-white"

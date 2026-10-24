@@ -51,14 +51,17 @@ export default function RootLayout({
     <html
       lang="en"
       data-theme="dark"
+      suppressHydrationWarning
       className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
     >
-      {/* Anti-FOUC: apply stored theme before first paint */}
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `(function(){try{var t=localStorage.getItem('internals-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`,
-        }}
-      />
+      <head>
+        {/* Anti-FOUC: apply stored theme before first paint */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('internals-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#f4f3ef] font-sans text-neutral-950 antialiased dark:bg-black dark:text-white">
         <ThemeProvider>
           <AuthProvider>

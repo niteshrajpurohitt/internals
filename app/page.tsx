@@ -21,7 +21,7 @@ export default async function HomePage() {
             Engineering Blogs, Without the Noise
           </h1>
           <p className="mt-2 max-w-2xl text-xs leading-relaxed text-neutral-950/70 sm:text-sm dark:text-white/70">
-            Stop checking dozens of company sites individually for technical blogs. Deep dives from top engineering teams, all in one place. Links straight to the source.
+            Stop checking dozens of company sites individually. Find technical blogs from top engineering teams, all in one place. Links straight to the source.
           </p>
         </header>
 

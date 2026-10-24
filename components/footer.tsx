@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ShieldCheck, Mail, ExternalLink, X } from "lucide-react";
 import { Container } from "@/components/container";
+import { Logo } from "@/components/logo";
 
 export function Footer() {
   const [isDmcaOpen, setIsDmcaOpen] = useState(false);
@@ -14,9 +15,7 @@ export function Footer() {
           {/* Col 1 */}
           <div className="space-y-2 md:col-span-2">
             <div className="flex items-center gap-2 font-bold text-neutral-950 dark:text-white">
-              <span className="flex h-5 w-5 items-center justify-center border border-neutral-950 bg-[#f4f3ef] text-[10px] text-neutral-950 dark:border-white dark:bg-black dark:text-white">
-                IN
-              </span>
+              <Logo className="h-4 w-4 text-neutral-950 dark:text-white" size={16} />
               <span className="tracking-wider uppercase">Internals Index</span>
             </div>
             <p className="max-w-lg font-sans text-xs leading-relaxed text-neutral-950/60 dark:text-white/60">

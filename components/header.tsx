@@ -7,6 +7,7 @@ import { useSearch } from "@/lib/search-context";
 import { useAuth } from "@/lib/auth-context";
 import { useTheme } from "@/lib/theme-context";
 import { Container } from "./container";
+import { Logo } from "./logo";
 
 export function Header() {
   const { searchQuery, setSearchQuery } = useSearch();
@@ -36,11 +37,9 @@ export function Header() {
         {/* Brand */}
         <Link
           href="/"
-          className="flex items-center gap-2 text-sm font-semibold tracking-tight text-neutral-950 transition-opacity hover:opacity-80 dark:text-white"
+          className="group flex items-center gap-2 text-sm font-semibold tracking-tight text-neutral-950 transition-opacity hover:opacity-85 dark:text-white"
         >
-          <span className="flex h-6 w-6 items-center justify-center border border-neutral-950 bg-[#f4f3ef] font-mono text-xs font-bold text-neutral-950 dark:border-white dark:bg-black dark:text-white">
-            IN
-          </span>
+          <Logo className="h-5 w-5 text-neutral-950 transition-transform duration-200 group-hover:scale-105 dark:text-white" />
           <span className="font-mono text-sm font-bold tracking-tight">Internals</span>
         </Link>
 

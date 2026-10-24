@@ -240,11 +240,55 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     return companies.filter((c) => c.post_count === undefined || c.post_count >= 2);
   }, [companies]);
 
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  useEffect(() => {
+    const el = categoryBarRef.current;
+    if (!el) return;
+
+    const checkScroll = () => {
+      setCanScrollLeft(el.scrollLeft > 4);
+      setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+    };
+
+    checkScroll();
+    el.addEventListener("scroll", checkScroll, { passive: true });
+    window.addEventListener("resize", checkScroll);
+    return () => {
+      el.removeEventListener("scroll", checkScroll);
+      window.removeEventListener("resize", checkScroll);
+    };
+  }, []);
+
+  const scrollMaskStyle = useMemo(() => {
+    if (canScrollLeft && canScrollRight) {
+      return {
+        WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 28px, black calc(100% - 32px), transparent 100%)",
+        maskImage: "linear-gradient(to right, transparent 0%, black 28px, black calc(100% - 32px), transparent 100%)",
+      };
+    }
+    if (canScrollRight) {
+      return {
+        WebkitMaskImage: "linear-gradient(to right, black calc(100% - 32px), transparent 100%)",
+        maskImage: "linear-gradient(to right, black calc(100% - 32px), transparent 100%)",
+      };
+    }
+    if (canScrollLeft) {
+      return {
+        WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 28px, black 100%)",
+        maskImage: "linear-gradient(to right, transparent 0%, black 28px, black 100%)",
+      };
+    }
+    return undefined;
+  }, [canScrollLeft, canScrollRight]);
+
   return (
     <div className="w-full space-y-5">
-      {/* Category Pills (Row 1: Full-width horizontal scroll) */}
+      {/* Category Pills (Row 1: Full-width horizontal scroll with soft edge dissolve) */}
       <div
         ref={categoryBarRef}
+        style={scrollMaskStyle}
         className="no-scrollbar flex w-full items-center gap-1.5 overflow-x-auto pb-1 font-mono text-xs"
       >
         {CATEGORIES.map((category) => {

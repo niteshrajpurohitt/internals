@@ -1,22 +1,18 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import Link from "next/link";
-import { Search, X, User as UserIcon, LogOut, Bookmark, Sun, Moon } from "lucide-react";
+import { Search, X, User as UserIcon, LogOut, Sun, Moon } from "lucide-react";
 import { useSearch } from "@/lib/search-context";
 import { useAuth } from "@/lib/auth-context";
-import { useBookmarks } from "@/lib/bookmark-context";
 import { useTheme } from "@/lib/theme-context";
 import { Container } from "./container";
 
 export function Header() {
   const { searchQuery, setSearchQuery } = useSearch();
   const { user, openLoginModal, signOut } = useAuth();
-  const { bookmarkCount } = useBookmarks();
   const { theme, toggleTheme } = useTheme();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -32,24 +28,6 @@ export function Header() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
-
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
-        setIsUserMenuOpen(false);
-      }
-    }
-    if (isUserMenuOpen) document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [isUserMenuOpen]);
-
-  const avatarUrl = user?.user_metadata?.avatar_url || user?.user_metadata?.picture;
-  const displayName =
-    user?.user_metadata?.full_name ||
-    user?.user_metadata?.user_name ||
-    user?.user_metadata?.preferred_username ||
-    user?.email?.split("@")[0] ||
-    "User";
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-neutral-950/15 bg-[#f4f3ef]/90 backdrop-blur-md dark:border-white/15 dark:bg-black/90">
@@ -109,55 +87,16 @@ export function Header() {
             {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
           </button>
 
-          {/* Auth */}
+          {/* Auth: Direct Sign In / Sign Out */}
           {user ? (
-            <div className="relative" ref={userMenuRef}>
-              <button
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex h-7 cursor-pointer items-center gap-1.5 border border-neutral-950/20 bg-white px-2 font-mono text-[11px] text-neutral-950 transition-colors hover:border-neutral-950/50 dark:border-white/20 dark:bg-black dark:text-white dark:hover:border-white/50"
-              >
-                {avatarUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={avatarUrl}
-                    alt={displayName}
-                    className="h-4 w-4 rounded-full border border-neutral-950/20 object-cover dark:border-white/20"
-                  />
-                ) : (
-                  <UserIcon className="h-3 w-3 text-neutral-950/60 dark:text-white/60" />
-                )}
-                <span className="max-w-[80px] truncate sm:max-w-[120px]">{displayName}</span>
-              </button>
-
-              {isUserMenuOpen && (
-                <div className="cad-crosshair absolute right-0 top-full z-50 mt-2 w-52 border border-neutral-950/25 bg-white p-2.5 shadow-2xl font-mono text-xs dark:border-white/25 dark:bg-neutral-950">
-                  <div className="border-b border-neutral-950/10 px-2 py-1.5 dark:border-white/10">
-                    <p className="truncate font-semibold text-neutral-950 dark:text-white">{displayName}</p>
-                    <p className="truncate text-[10px] text-neutral-950/50 dark:text-white/50">{user.email}</p>
-                  </div>
-
-                  <div className="border-b border-neutral-950/10 py-1 dark:border-white/10">
-                    <div className="flex items-center justify-between px-2 py-1 text-neutral-950/70 dark:text-white/70">
-                      <span className="flex items-center gap-1.5 text-[11px]">
-                        <Bookmark className="h-3 w-3" />
-                        Saved Articles
-                      </span>
-                      <span className="border border-neutral-950/20 bg-[#f4f3ef] px-1.5 py-0.5 text-[10px] font-bold text-neutral-950 dark:border-white/20 dark:bg-black dark:text-white">
-                        {bookmarkCount}
-                      </span>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => { setIsUserMenuOpen(false); signOut(); }}
-                    className="mt-1 flex w-full cursor-pointer items-center gap-2 px-2 py-1.5 text-left text-neutral-950/70 transition-colors hover:bg-neutral-950/5 hover:text-neutral-950 dark:text-white/70 dark:hover:bg-white/10 dark:hover:text-white"
-                  >
-                    <LogOut className="h-3 w-3" />
-                    <span>Sign Out</span>
-                  </button>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={signOut}
+              title={`Signed in as ${user.email || "developer"} — click to sign out`}
+              className="flex h-7 cursor-pointer items-center gap-1.5 border border-neutral-950/25 bg-white px-2.5 font-mono text-[11px] text-neutral-950 shadow-xs transition-all hover:border-neutral-950 hover:bg-neutral-100 dark:border-white/25 dark:bg-black dark:text-white dark:hover:border-white dark:hover:bg-neutral-900"
+            >
+              <LogOut className="h-3 w-3 text-neutral-950/70 dark:text-white/70" />
+              <span>SIGN OUT</span>
+            </button>
           ) : (
             <button
               onClick={openLoginModal}

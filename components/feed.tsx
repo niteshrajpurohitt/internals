@@ -43,6 +43,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("All");
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("all");
+  const [selectedDuration, setSelectedDuration] = useState<string>("all");
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
   const [isFiltering, setIsFiltering] = useState(false);
@@ -62,6 +63,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     params.set("limit", limit.toString());
     if (selectedCompanyId !== "all") params.set("companyId", selectedCompanyId);
     if (selectedCategory !== "All") params.set("category", selectedCategory);
+    if (selectedDuration !== "all") params.set("duration", selectedDuration);
     if (searchQuery.trim()) params.set("q", searchQuery.trim());
     return `/api/posts?${params.toString()}`;
   };
@@ -90,6 +92,16 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
             (p) => (p.company?.id || p.companies?.id) === selectedCompanyId
           );
         }
+        if (selectedDuration !== "all") {
+          filtered = filtered.filter((p) => {
+            const match = p.read_time?.match(/(\d+)/);
+            const mins = match ? parseInt(match[1], 10) : 0;
+            if (selectedDuration === "quick") return mins < 5;
+            if (selectedDuration === "standard") return mins >= 5 && mins <= 10;
+            if (selectedDuration === "long") return mins > 10;
+            return true;
+          });
+        }
         if (searchQuery.trim()) {
           const q = searchQuery.toLowerCase();
           filtered = filtered.filter(
@@ -105,7 +117,10 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     }
 
     const isDefault =
-      selectedCategory === "All" && selectedCompanyId === "all" && !searchQuery.trim();
+      selectedCategory === "All" &&
+      selectedCompanyId === "all" &&
+      selectedDuration === "all" &&
+      !searchQuery.trim();
 
     if (isDefault) {
       if (posts !== initialPosts) {
@@ -137,7 +152,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     }, searchQuery ? 250 : 0);
 
     return () => { clearTimeout(timer); abortController.abort(); };
-  }, [selectedCategory, selectedCompanyId, searchQuery, initialPosts, totalCount, user, fetchSavedPosts]);
+  }, [selectedCategory, selectedCompanyId, selectedDuration, searchQuery, initialPosts, totalCount, user, fetchSavedPosts]);
 
   const loadMorePosts = async () => {
     if (isLoadingMore || !hasMore || isFiltering) return;
@@ -230,23 +245,41 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
           })}
         </div>
 
-        {/* Company Dropdown */}
-        <div className="flex shrink-0 items-center gap-2 self-start font-mono text-xs sm:self-auto">
-          <span className="uppercase text-neutral-950/50 dark:text-white/50">Source:</span>
-          <select
-            value={selectedCompanyId}
-            onChange={(e) => setSelectedCompanyId(e.target.value)}
-            className="h-7 cursor-pointer border border-neutral-950/25 bg-white px-2 font-mono text-xs text-neutral-950 focus:border-neutral-950 focus:outline-none dark:border-white/25 dark:bg-black dark:text-white dark:focus:border-white"
-          >
-            <option value="all">All Companies</option>
-            {companies
-              .filter((c) => c.post_count === undefined || c.post_count >= 2)
-              .map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-          </select>
+        {/* Dropdowns: Company & Duration */}
+        <div className="flex flex-wrap items-center gap-3 font-mono text-xs">
+          {/* Company Dropdown */}
+          <div className="flex shrink-0 items-center gap-1.5 self-start sm:self-auto">
+            <span className="uppercase text-neutral-950/50 dark:text-white/50">Company:</span>
+            <select
+              value={selectedCompanyId}
+              onChange={(e) => setSelectedCompanyId(e.target.value)}
+              className="h-7 cursor-pointer border border-neutral-950/25 bg-white px-2 font-mono text-xs text-neutral-950 focus:border-neutral-950 focus:outline-none dark:border-white/25 dark:bg-black dark:text-white dark:focus:border-white"
+            >
+              <option value="all">All</option>
+              {companies
+                .filter((c) => c.post_count === undefined || c.post_count >= 2)
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          {/* Duration Dropdown */}
+          <div className="flex shrink-0 items-center gap-1.5 self-start sm:self-auto">
+            <span className="uppercase text-neutral-950/50 dark:text-white/50">Duration:</span>
+            <select
+              value={selectedDuration}
+              onChange={(e) => setSelectedDuration(e.target.value)}
+              className="h-7 cursor-pointer border border-neutral-950/25 bg-white px-2 font-mono text-xs text-neutral-950 focus:border-neutral-950 focus:outline-none dark:border-white/25 dark:bg-black dark:text-white dark:focus:border-white"
+            >
+              <option value="all">All</option>
+              <option value="quick">&lt; 5 min</option>
+              <option value="standard">5 – 10 min</option>
+              <option value="long">10+ min</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -354,6 +387,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
                     onClick={() => {
                       setSelectedCategory("All");
                       setSelectedCompanyId("all");
+                      setSelectedDuration("all");
                       setSearchQuery("");
                     }}
                     className="mt-4 cursor-pointer border border-neutral-950/40 bg-white px-3 py-1.5 text-xs text-neutral-950 transition-colors hover:border-neutral-950 hover:bg-neutral-950 hover:text-white dark:border-white/40 dark:bg-black dark:text-white dark:hover:border-white dark:hover:bg-white dark:hover:text-black"

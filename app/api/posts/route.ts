@@ -10,8 +10,9 @@ export async function GET(req: NextRequest) {
   const companyId = searchParams.get("companyId") || undefined;
   const category = searchParams.get("category") || undefined;
   const searchQuery = searchParams.get("q") || undefined;
+  const duration = searchParams.get("duration") || undefined;
 
-  const queryOptions = { offset, limit, companyId, category, searchQuery };
+  const queryOptions = { offset, limit, companyId, category, searchQuery, duration };
 
   try {
     const [posts, totalCount] = await Promise.all([

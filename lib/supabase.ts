@@ -111,6 +111,43 @@ export interface PostQueryOptions {
   companyId?: string;
   category?: string;
   searchQuery?: string;
+  duration?: string;
+}
+
+export function getDurationReadTimes(duration?: string): string[] {
+  switch (duration) {
+    case "quick": // < 5 min
+      return ["1 min read", "2 min read", "3 min read", "4 min read"];
+    case "standard": // 5 - 10 min
+      return [
+        "5 min read",
+        "6 min read",
+        "7 min read",
+        "8 min read",
+        "9 min read",
+        "10 min read",
+      ];
+    case "long": // 10+ min
+      return [
+        "11 min read",
+        "12 min read",
+        "13 min read",
+        "14 min read",
+        "15 min read",
+        "16 min read",
+        "17 min read",
+        "18 min read",
+        "19 min read",
+        "20 min read",
+        "21 min read",
+        "22 min read",
+        "23 min read",
+        "24 min read",
+        "25 min read",
+      ];
+    default:
+      return [];
+  }
 }
 
 export function getCategoryTagVariations(category: string): string[] {
@@ -323,7 +360,7 @@ export function applySearchFilter<T>(
 }
 
 export async function getPostCount(options?: PostQueryOptions): Promise<number> {
-  const { companyId, category, searchQuery } = options || {};
+  const { companyId, category, searchQuery, duration } = options || {};
 
   if (!supabase) {
     return 0;
@@ -338,6 +375,12 @@ export async function getPostCount(options?: PostQueryOptions): Promise<number> 
     if (category && category !== "All") {
       const variations = getCategoryTagVariations(category);
       query = query.overlaps("tags", variations);
+    }
+    if (duration && duration !== "all") {
+      const times = getDurationReadTimes(duration);
+      if (times.length > 0) {
+        query = query.in("read_time", times);
+      }
     }
     if (searchQuery && searchQuery.trim()) {
       const companies = await getCachedCompanies();
@@ -400,7 +443,7 @@ export function interleavePostsByCompany(
 }
 
 export async function getPosts(options?: PostQueryOptions): Promise<PostWithCompany[]> {
-  const { offset = 0, limit = 40, companyId, category, searchQuery } = options || {};
+  const { offset = 0, limit = 40, companyId, category, searchQuery, duration } = options || {};
 
   if (!supabase) {
     return [];
@@ -430,6 +473,12 @@ export async function getPosts(options?: PostQueryOptions): Promise<PostWithComp
     if (category && category !== "All") {
       const variations = getCategoryTagVariations(category);
       query = query.overlaps("tags", variations);
+    }
+    if (duration && duration !== "all") {
+      const times = getDurationReadTimes(duration);
+      if (times.length > 0) {
+        query = query.in("read_time", times);
+      }
     }
     if (searchQuery && searchQuery.trim()) {
       const companies = await getCachedCompanies();

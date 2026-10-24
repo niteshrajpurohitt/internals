@@ -16,7 +16,7 @@ export default async function HomePage() {
     <main className="flex min-h-screen flex-col justify-between">
       <Container size="default" className="pt-8 pb-4 sm:pt-10">
         {/* Hero Section */}
-        <header className="cad-crosshair mb-8 border border-dashed border-neutral-950/25 bg-white p-5 sm:p-6 dark:border-white/25 dark:bg-neutral-950">
+        <header className="mb-8 border border-dashed border-neutral-950/25 bg-white p-5 sm:p-6 dark:border-white/25 dark:bg-neutral-950">
           <h1 className="text-2xl font-bold tracking-tight text-neutral-950 sm:text-3xl lg:text-4xl dark:text-white">
             Engineering Blogs, Without the Noise
           </h1>

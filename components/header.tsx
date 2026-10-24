@@ -37,9 +37,9 @@ export function Header() {
         {/* Brand */}
         <Link
           href="/"
-          className="group flex items-center gap-2 text-sm font-semibold tracking-tight text-neutral-950 transition-opacity hover:opacity-85 dark:text-white"
+          className="flex items-center gap-2 text-sm font-semibold tracking-tight text-neutral-950 dark:text-white"
         >
-          <Logo className="h-5 w-5 text-neutral-950 transition-transform duration-200 group-hover:scale-105 dark:text-white" />
+          <Logo className="h-5 w-5 text-neutral-950 dark:text-white" />
           <span className="font-mono text-sm font-bold tracking-tight">Internals</span>
         </Link>
 
@@ -91,18 +91,21 @@ export function Header() {
             <button
               onClick={signOut}
               title={`Signed in as ${user.email || "developer"} — click to sign out`}
-              className="flex h-7 cursor-pointer items-center gap-1.5 border border-neutral-950/25 bg-white px-2.5 font-mono text-[11px] text-neutral-950 shadow-xs transition-all hover:border-neutral-950 hover:bg-neutral-100 dark:border-white/25 dark:bg-black dark:text-white dark:hover:border-white dark:hover:bg-neutral-900"
+              aria-label="Sign out"
+              className="flex h-7 cursor-pointer items-center justify-center gap-1.5 border border-neutral-950/25 bg-white px-2 sm:px-2.5 font-mono text-[11px] whitespace-nowrap text-neutral-950 shadow-xs transition-all hover:border-neutral-950 hover:bg-neutral-100 dark:border-white/25 dark:bg-black dark:text-white dark:hover:border-white dark:hover:bg-neutral-900"
             >
-              <LogOut className="h-3 w-3 text-neutral-950/70 dark:text-white/70" />
-              <span>SIGN OUT</span>
+              <LogOut className="h-3.5 w-3.5 text-neutral-950/70 dark:text-white/70" />
+              <span className="hidden sm:inline">SIGN OUT</span>
             </button>
           ) : (
             <button
               onClick={openLoginModal}
-              className="flex h-7 cursor-pointer items-center gap-1.5 border border-neutral-950/25 bg-white px-2.5 font-mono text-[11px] text-neutral-950 shadow-xs transition-all hover:border-neutral-950 hover:bg-neutral-100 dark:border-white/25 dark:bg-black dark:text-white dark:hover:border-white dark:hover:bg-neutral-900"
+              title="Sign in"
+              aria-label="Sign in"
+              className="flex h-7 cursor-pointer items-center justify-center gap-1.5 border border-neutral-950/25 bg-white px-2 sm:px-2.5 font-mono text-[11px] whitespace-nowrap text-neutral-950 shadow-xs transition-all hover:border-neutral-950 hover:bg-neutral-100 dark:border-white/25 dark:bg-black dark:text-white dark:hover:border-white dark:hover:bg-neutral-900"
             >
-              <UserIcon className="h-3 w-3 text-neutral-950/70 dark:text-white/70" />
-              <span>SIGN IN</span>
+              <UserIcon className="h-3.5 w-3.5 text-neutral-950/70 dark:text-white/70" />
+              <span className="hidden sm:inline">SIGN IN</span>
             </button>
           )}
         </div>

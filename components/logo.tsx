@@ -5,12 +5,11 @@ interface LogoProps {
   size?: number;
 }
 
-export function Logo({ className = "h-5 w-5", size = 20 }: LogoProps) {
+export function Logo({ className = "h-5 w-5", size }: LogoProps) {
   return (
     <svg
-      width={size}
-      height={size}
-      viewBox="0 0 1024 1024"
+      {...(size ? { width: size, height: size } : {})}
+      viewBox="168 168 688 688"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={className}

@@ -32,6 +32,7 @@
 /* ─── Base ───────────────────────────────────────────────────────────────── */
 body {
   min-height: 100vh;
+  background-position: center top;
   background-image:
     linear-gradient(to right,  var(--grid-major) 1px, transparent 1px),
     linear-gradient(to bottom, var(--grid-major) 1px, transparent 1px),
@@ -40,7 +41,7 @@ body {
   background-size: 60px 60px, 60px 60px, 12px 12px, 12px 12px;
 }
 
-/* ─── CAD Crosshair Corner Markers ──────────────────────────────────────── */
+/* ─── CAD Corner Markers (Diagonal Corner Dots) ─────────────────────────── */
 .cad-crosshair {
   position: relative;
 }
@@ -49,31 +50,22 @@ body {
 .cad-crosshair::after {
   content: "";
   position: absolute;
-  width: 13px;
-  height: 13px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background-color: var(--crosshair-color);
   pointer-events: none;
   z-index: 2;
-  background-repeat: no-repeat;
 }
 
 .cad-crosshair::before {
-  top: -7px;
-  left: -7px;
-  background-image:
-    linear-gradient(to right,  var(--crosshair-color), var(--crosshair-color)),
-    linear-gradient(to bottom, var(--crosshair-color), var(--crosshair-color));
-  background-position: 0px 6px, 6px 0px;
-  background-size: 13px 1px, 1px 13px;
+  top: -2.5px;
+  left: -2.5px;
 }
 
 .cad-crosshair::after {
-  bottom: -7px;
-  right: -7px;
-  background-image:
-    linear-gradient(to right,  var(--crosshair-color), var(--crosshair-color)),
-    linear-gradient(to bottom, var(--crosshair-color), var(--crosshair-color));
-  background-position: 0px 6px, 6px 0px;
-  background-size: 13px 1px, 1px 13px;
+  bottom: -2.5px;
+  right: -2.5px;
 }
 
 /* ─── CAD Dimension Line ─────────────────────────────────────────────────── */

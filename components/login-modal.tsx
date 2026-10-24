@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { X, Sparkles } from "lucide-react";
+import { X } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { Logo } from "@/components/logo";
 
 export function LoginModal() {
   const { isLoginModalOpen, closeLoginModal, signInWithGithub, signInWithGoogle } = useAuth();
@@ -76,39 +77,33 @@ export function LoginModal() {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="cad-crosshair relative w-full max-w-sm border border-neutral-950/25 bg-white p-6 shadow-2xl dark:border-white/25 dark:bg-neutral-950"
+        className="cad-crosshair relative w-full max-w-sm border border-neutral-950/25 bg-white p-5 sm:p-6 shadow-2xl dark:border-white/25 dark:bg-neutral-950"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between border-b border-neutral-950/15 pb-3 dark:border-white/15">
-          <div className="flex items-center gap-2">
-            <span className="flex h-5 w-5 items-center justify-center border border-neutral-950 bg-[#f4f3ef] font-mono text-[10px] font-bold text-neutral-950 dark:border-white dark:bg-black dark:text-white">
-              IN
-            </span>
-            <span className="font-mono text-xs uppercase tracking-wider text-neutral-950/70 dark:text-white/70">
-              User Access // v2.0
-            </span>
-          </div>
+        {/* Top Header: Close Button */}
+        <div className="mb-2 flex justify-end">
           <button
             onClick={handleClose}
             aria-label="Close dialog"
-            className="text-neutral-950/50 transition-opacity hover:opacity-80 dark:text-white/50"
+            className="cursor-pointer rounded-xs p-1 text-neutral-950/50 transition-colors hover:text-neutral-950 dark:text-white/50 dark:hover:text-white"
           >
-            <X className="h-4 w-4" />
+            <X className="pointer-events-none h-4 w-4" />
           </button>
         </div>
 
-        {/* Pitch */}
-        <div className="mt-5 text-left">
-          <h2 className="text-lg font-bold tracking-tight text-neutral-950 dark:text-white">
-            Developer Account
-          </h2>
-          <p className="mt-1 font-mono text-xs leading-relaxed text-neutral-950/60 dark:text-white/60">
-            100% Free. Sync bookmarks across all your devices, follow top engineering teams, and filter noise.
-          </p>
+        {/* Top: Large Framed Logo Box */}
+        <div className="flex h-44 sm:h-52 w-full items-center justify-center border border-dashed border-neutral-950/20 bg-[#f4f3ef]/60 p-3 sm:p-4 dark:border-white/20 dark:bg-black/60">
+          <Logo className="h-full w-auto max-h-full max-w-full text-neutral-950 dark:text-white" />
         </div>
 
-        {/* Buttons */}
-        <div className="mt-6 flex flex-col gap-2.5 font-mono text-xs">
+        {/* Heading: sign in */}
+        <div className="mt-4 text-left">
+          <h2 className="text-base font-bold tracking-tight text-neutral-950 dark:text-white">
+            Sign in
+          </h2>
+        </div>
+
+        {/* Middle: Buttons */}
+        <div className="mt-3 flex flex-col gap-2.5 font-mono text-xs">
           {/* GitHub */}
           <button
             onClick={handleGithub}
@@ -137,13 +132,10 @@ export function LoginModal() {
           </button>
         </div>
 
-        {/* Footer */}
-        <div className="mt-5 border-t border-neutral-950/10 pt-3 text-center dark:border-white/10">
-          <p className="flex items-center justify-center gap-1 font-mono text-[10px] text-neutral-950/40 dark:text-white/40">
-            <Sparkles className="h-2.5 w-2.5" />
-            Zero paywalls. No spam. Canonical links direct to authors.
-          </p>
-        </div>
+        {/* Bottom: Other text */}
+        <p className="mt-4 text-center font-mono text-[11px] leading-relaxed text-neutral-950/60 dark:text-white/60">
+          Zero paywalls. No spam. Sync bookmarks across devices.
+        </p>
       </div>
     </div>
   );

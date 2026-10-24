@@ -180,6 +180,17 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const [durationDropdownOpen, setDurationDropdownOpen] = useState(false);
   const companyDropdownRef = useRef<HTMLDivElement>(null);
   const durationDropdownRef = useRef<HTMLDivElement>(null);
+  const categoryBarRef = useRef<HTMLDivElement>(null);
+
+  const handleResetFilters = () => {
+    setSelectedCategory("All");
+    setSelectedCompanyId("all");
+    setSelectedDuration("all");
+    setSearchQuery("");
+    if (categoryBarRef.current) {
+      categoryBarRef.current.scrollTo({ left: 0, behavior: "smooth" });
+    }
+  };
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -232,7 +243,10 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   return (
     <div className="w-full space-y-5">
       {/* Category Pills (Row 1: Full-width horizontal scroll) */}
-      <div className="no-scrollbar flex w-full items-center gap-1.5 overflow-x-auto pb-1 font-mono text-xs">
+      <div
+        ref={categoryBarRef}
+        className="no-scrollbar flex w-full items-center gap-1.5 overflow-x-auto pb-1 font-mono text-xs"
+      >
         {CATEGORIES.map((category) => {
           const isActive = selectedCategory === category;
           const isSaved = category === "Saved";
@@ -241,8 +255,14 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
             <button
               key={category}
               onClick={() => {
-                if (isSaved && !user) openLoginModal();
-                else setSelectedCategory(category);
+                if (isSaved && !user) {
+                  openLoginModal();
+                } else {
+                  setSelectedCategory(category);
+                  if (category === "All" && categoryBarRef.current) {
+                    categoryBarRef.current.scrollTo({ left: 0, behavior: "smooth" });
+                  }
+                }
               }}
               className={`inline-flex h-7 shrink-0 cursor-pointer items-center justify-center border px-3 text-xs font-bold uppercase whitespace-nowrap transition-colors duration-100 ${
                 isActive
@@ -376,12 +396,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
 
         {(selectedCategory !== "All" || selectedCompanyId !== "all" || selectedDuration !== "all" || searchQuery) && (
           <button
-            onClick={() => {
-              setSelectedCategory("All");
-              setSelectedCompanyId("all");
-              setSelectedDuration("all");
-              setSearchQuery("");
-            }}
+            onClick={handleResetFilters}
             className="flex cursor-pointer items-center gap-1 text-neutral-950/60 underline transition-colors hover:text-neutral-950 dark:text-white/60 dark:hover:text-white"
           >
             Reset filters
@@ -421,12 +436,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
             <div className="flex w-full justify-center py-12">
               <button
                 type="button"
-                onClick={() => {
-                  setSelectedCategory("All");
-                  setSelectedCompanyId("all");
-                  setSelectedDuration("all");
-                  setSearchQuery("");
-                }}
+                onClick={handleResetFilters}
                 className="inline-flex h-9 cursor-pointer items-center justify-center border border-neutral-950 bg-neutral-950 px-6 font-mono text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-neutral-800 active:scale-98 dark:border-white dark:bg-white dark:text-black dark:hover:bg-white/90"
               >
                 {selectedCategory === "Saved"

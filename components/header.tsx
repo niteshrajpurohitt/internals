@@ -38,6 +38,12 @@ export function Header() {
         {/* Brand */}
         <Link
           href="/"
+          onClick={(e) => {
+            if (window.location.pathname === "/") {
+              e.preventDefault();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
           className="flex items-center gap-2 text-sm font-semibold tracking-tight text-neutral-950 dark:text-white"
         >
           <Logo className="h-4 w-4 text-neutral-950 dark:text-white" />

@@ -2,6 +2,7 @@
 
 import { useRef, useEffect } from "react";
 import Link from "next/link";
+import { motion } from "motion/react";
 import { Search, X, User as UserIcon, LogOut, Sun, Moon } from "lucide-react";
 import { useSearch } from "@/lib/search-context";
 import { useAuth } from "@/lib/auth-context";
@@ -88,25 +89,41 @@ export function Header() {
 
           {/* Auth: Direct Sign In / Sign Out */}
           {user ? (
-            <button
+            <motion.button
+              whileTap={{ scale: 0.97 }}
               onClick={signOut}
               title={`Signed in as ${user.email || "developer"} — click to sign out`}
               aria-label="Sign out"
-              className="flex h-7 cursor-pointer items-center justify-center gap-1.5 border border-neutral-950/25 bg-white px-2 sm:px-2.5 font-mono text-[11px] whitespace-nowrap text-neutral-950 shadow-xs transition-all hover:border-neutral-950 hover:bg-neutral-100 dark:border-white/25 dark:bg-black dark:text-white dark:hover:border-white dark:hover:bg-neutral-900"
+              className="flex h-7 cursor-pointer items-center justify-center gap-1.5 border border-neutral-950/25 bg-white px-2 sm:px-2.5 font-mono text-[11px] whitespace-nowrap text-neutral-950 transition-all hover:border-neutral-950 hover:bg-neutral-100 dark:border-white/25 dark:bg-[#111111] dark:text-white dark:hover:border-white dark:hover:bg-neutral-900"
             >
               <LogOut className="h-3.5 w-3.5 text-neutral-950/70 dark:text-white/70" />
               <span className="hidden sm:inline">SIGN OUT</span>
-            </button>
+            </motion.button>
           ) : (
-            <button
+            <motion.button
+              initial="rest"
+              whileHover="hover"
+              whileTap="tap"
               onClick={openLoginModal}
               title="Sign in"
               aria-label="Sign in"
-              className="flex h-7 cursor-pointer items-center justify-center gap-1.5 border border-neutral-950/25 bg-white px-2 sm:px-2.5 font-mono text-[11px] whitespace-nowrap text-neutral-950 shadow-xs transition-all hover:border-neutral-950 hover:bg-neutral-100 dark:border-white/25 dark:bg-black dark:text-white dark:hover:border-white dark:hover:bg-neutral-900"
+              className="relative flex h-7 cursor-pointer items-center justify-center gap-1.5 border border-neutral-950 bg-neutral-950 px-2 sm:px-2.5 font-mono text-[11px] font-semibold whitespace-nowrap text-white transition-colors dark:border-white dark:bg-white dark:text-neutral-950"
             >
-              <UserIcon className="h-3.5 w-3.5 text-neutral-950/70 dark:text-white/70" />
-              <span className="hidden sm:inline">SIGN IN</span>
-            </button>
+              {/* Concentric Double-Border Clearance Ring (Animated with Motion) */}
+              <motion.span
+                variants={{
+                  rest: { opacity: 0, scale: 0.94 },
+                  hover: { opacity: 1, scale: 1 },
+                  tap: { scale: 0.97, opacity: 0.8 },
+                }}
+                transition={{ type: "spring", stiffness: 480, damping: 26 }}
+                className="pointer-events-none absolute -inset-[3px] border border-neutral-950 dark:border-white"
+                aria-hidden="true"
+              />
+
+              <UserIcon className="relative z-10 h-3.5 w-3.5 text-white dark:text-neutral-950" />
+              <span className="relative z-10 hidden sm:inline">SIGN IN</span>
+            </motion.button>
           )}
         </div>
       </Container>

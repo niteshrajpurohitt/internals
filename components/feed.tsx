@@ -499,11 +499,11 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
             type="button"
             onClick={loadMorePosts}
             disabled={isLoadingMore}
-            className="inline-flex h-9 min-w-36 cursor-pointer items-center justify-center border border-neutral-950 bg-neutral-950 px-7 font-mono text-xs font-bold tracking-wider text-white transition-all hover:bg-neutral-800 active:scale-98 disabled:cursor-not-allowed disabled:opacity-70 dark:border-white dark:bg-white dark:text-black dark:hover:bg-white/90"
+            className="inline-flex h-9 min-w-40 cursor-pointer items-center justify-center gap-2 border border-neutral-950/25 bg-white px-7 font-mono text-xs font-semibold tracking-wider text-neutral-950 shadow-xs transition-all hover:border-neutral-950 hover:bg-neutral-100 active:translate-y-[1px] disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/25 dark:bg-[#111111] dark:text-white dark:hover:border-white/60 dark:hover:bg-neutral-900"
           >
             {isLoadingMore ? (
               <div
-                className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white dark:border-black/30 dark:border-t-black"
+                className="h-4 w-4 animate-spin rounded-full border-2 border-neutral-950/30 border-t-neutral-950 dark:border-white/30 dark:border-t-white"
                 role="status"
                 aria-label="Loading"
               />

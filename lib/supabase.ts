@@ -43,7 +43,12 @@ export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
 let client = null;
 if (isSupabaseConfigured) {
   try {
-    client = createClient(supabaseUrl!, supabaseAnonKey!);
+    client = createClient(supabaseUrl!, supabaseAnonKey!, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+    });
   } catch (err) {
     console.warn("Failed to initialize Supabase client:", err);
     client = null;

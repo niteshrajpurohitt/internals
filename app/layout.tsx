@@ -19,6 +19,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://internals.dev"),
   title: "Internals — Engineering Blogs, Without the Noise",
   description: "Stop checking dozens of company sites individually. Find technical blogs from top engineering teams, all in one place.",
   keywords: [
@@ -39,6 +40,12 @@ export const metadata: Metadata = {
     description:
       "Stop checking dozens of company sites individually. Find technical blogs from top engineering teams, all in one place.",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Internals — Engineering Blogs, Without the Noise",
+    description:
+      "Stop checking dozens of company sites individually. Find technical blogs from top engineering teams, all in one place.",
   },
 };
 

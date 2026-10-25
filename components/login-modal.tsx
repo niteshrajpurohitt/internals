@@ -90,13 +90,18 @@ export function LoginModal() {
         </div>
 
         {/* Top: Large Framed Logo Box */}
-        <div className="flex h-44 sm:h-52 w-full items-center justify-center border border-dashed border-neutral-950/20 bg-[#f4f3ef]/60 p-3 sm:p-4 dark:border-white/20 dark:bg-[#080808]/70">
-          <Logo className="h-full w-auto max-h-full max-w-full text-neutral-950 dark:text-white" />
+        <div className="relative flex h-44 sm:h-52 w-full items-center justify-center overflow-hidden border border-dashed border-neutral-950/20 bg-[#f4f3ef]/60 p-3 sm:p-4 dark:border-white/20 dark:bg-[#080808]/70">
+          {/* Subtle Masked CAD Grid Background */}
+          <div
+            className="cad-grid-modal pointer-events-none absolute inset-0 z-0"
+            aria-hidden="true"
+          />
+          <Logo className="relative z-10 h-full w-auto max-h-full max-w-full text-neutral-950 dark:text-white" />
         </div>
 
         {/* Heading: sign in */}
-        <div className="mt-4 text-left">
-          <h2 className="text-base font-bold tracking-tight text-neutral-950 dark:text-white">
+        <div className="mt-3.5 text-left">
+          <h2 className="text-xl font-bold tracking-tight text-neutral-950 dark:text-white leading-none">
             Sign in
           </h2>
         </div>

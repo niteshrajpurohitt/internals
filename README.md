@@ -1,7 +1,7 @@
 # Internals
 
 > **Engineering Blogs, Without the Noise.**  
-> Curated technical writing from top engineering teams. Links straight to the source.
+> Stop checking dozens of company sites individually. Find technical blogs from top engineering teams, all in one place. Links straight to the source.
 
 🌐 **Live Deployment:** [internals.niteshrajpurohit.in](https://internals.niteshrajpurohit.in)
 

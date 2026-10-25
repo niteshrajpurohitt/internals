@@ -24,6 +24,7 @@ export function Hero({ initialIsLoggedIn }: HeroProps) {
         <DecryptedText
           text="Without the Noise"
           animateOn="hover"
+          animateOnLoad={true}
           sequential={true}
           revealDirection="start"
           speed={45}

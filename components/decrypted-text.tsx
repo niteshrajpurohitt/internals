@@ -35,6 +35,7 @@ interface DecryptedTextProps extends HTMLMotionProps<'span'> {
   loop?: boolean;
   loopDelay?: number;
   hoverRadius?: number;
+  animateOnLoad?: boolean;
 }
 
 interface Frame {
@@ -134,6 +135,7 @@ export default function DecryptedText({
   loop = false,
   loopDelay = 2000,
   hoverRadius = 0,
+  animateOnLoad = false,
   ...props
 }: DecryptedTextProps) {
   const chars = useMemo(() => Array.from(String(text ?? '')), [text]);
@@ -479,6 +481,33 @@ export default function DecryptedText({
     };
   }, [animateOn, loop, chars]);
 
+  useEffect(() => {
+    if (!animateOnLoad) return;
+    let cancelled = false;
+
+    const triggerRun = () => {
+      if (cancelled) return;
+      if (engineRef.current && !runRef.current) {
+        startRun(true, { from: chars.map(char => isSpace(char)) });
+      }
+    };
+
+    if (typeof document !== 'undefined' && 'fonts' in document) {
+      document.fonts.ready.then(() => {
+        if (cancelled) return;
+        requestAnimationFrame(() => {
+          setTimeout(triggerRun, 120);
+        });
+      });
+    } else {
+      setTimeout(triggerRun, 120);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [animateOnLoad, chars]);
+
   useIsomorphicLayoutEffect(() => {
     const previous = previousRef.current;
     previousRef.current = frame;
@@ -587,7 +616,16 @@ export default function DecryptedText({
   };
 
   const animateProps = hoverable
-    ? { onMouseEnter: handleMouseEnter, onMouseMove: handleMouseMove, onMouseLeave: handleMouseLeave }
+    ? {
+        onMouseEnter: handleMouseEnter,
+        onMouseMove: handleMouseMove,
+        onMouseLeave: handleMouseLeave,
+        onClick: () => {
+          if (!runRef.current) {
+            startRun(true, { from: chars.map(char => isSpace(char)) });
+          }
+        },
+      }
     : animateOn === 'click'
       ? { onClick: handleClick }
       : {};

@@ -31,7 +31,7 @@ export function Header() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-neutral-950/15 bg-[#f4f3ef]/90 backdrop-blur-md dark:border-white/15 dark:bg-[#080808]/90">
+    <header className="sticky top-0 z-40 w-full border-b border-neutral-950/15 bg-[#f4f3ef]/80 backdrop-blur-md dark:border-white/15 dark:bg-[#080808]/90">
       <Container size="default" className="flex h-13 items-center justify-between gap-4">
 
         {/* Brand */}
@@ -110,6 +110,12 @@ export function Header() {
           )}
         </div>
       </Container>
+
+      {/* Subtle dissolve strip so scrolling content softly transitions under the header */}
+      <div
+        className="pointer-events-none absolute top-full left-0 right-0 h-3.5 bg-gradient-to-b from-[#f4f3ef]/70 to-transparent dark:from-[#080808]/85"
+        aria-hidden="true"
+      />
     </header>
   );
 }

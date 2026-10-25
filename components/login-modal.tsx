@@ -138,7 +138,7 @@ export function LoginModal() {
 
         {/* Bottom: Other text */}
         <p className="mt-4 text-center font-mono text-[11px] leading-relaxed text-neutral-950/60 dark:text-white/60">
-          Zero paywalls. No spam. Sync bookmarks across devices.
+          Save bookmarks across devices. No spam. Zero paywalls.
         </p>
       </div>
     </div>

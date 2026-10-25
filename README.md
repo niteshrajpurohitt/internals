@@ -1,36 +1,122 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Internals
+
+> **Engineering Blogs, Without the Noise.**  
+> Curated technical writing from top engineering teams. Links straight to the source.
+
+🌐 **Live Deployment:** [internals.niteshrajpurohit.in](https://internals.niteshrajpurohit.in)
+
+---
+
+## Overview
+
+Most company blogs are buried beneath marketing announcements, product releases, webinar invites, and executive PR. Finding deep, production-tested systems engineering articles requires digging through dozens of individual sites.
+
+**Internals** aggregates and filters technical writing directly from world-class engineering teams (Cloudflare, OpenAI, Stripe, Uber, Netflix, Figma, Datadog, and 40+ more). 
+
+Every post links directly to the original publisher — zero paywalls, zero full-text scraping, zero algorithms.
+
+---
+
+## Features
+
+- **Strict Signal Filtering**: Automated veto engine that strips out product release notes, sales marketing, funding PR, and HR posts to ensure only deep technical articles make the feed.
+- **Categorized Feeds**: Fast client-side filtering across core disciplines:
+  - *Classics*
+  - *Postmortems & Incident Reviews*
+  - *Distributed Systems & Consensus*
+  - *Databases & Storage Engines*
+  - *Infrastructure & Cloud*
+  - *Low-Level Systems & Compilers*
+  - *AI & Machine Learning*
+- **Cross-Device Bookmarking**: Save articles to your private reading list with GitHub or Google authentication.
+- **CAD Architectural Design**: Minimalist technical aesthetic built with custom CAD dimension lines, corner markers, Space Grotesk, and JetBrains Mono.
+- **Automated Sync Engine**: Background ingestion pipeline running via GitHub Actions on a 1-hour cron schedule.
+
+---
+
+## Tech Stack
+
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router, React 19, Server Components)
+- **Database & Auth**: [Supabase](https://supabase.com/) (PostgreSQL, Row Level Security, `@supabase/ssr`)
+- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
+- **Animations**: [Motion](https://motion.dev/)
+- **Typography**: Space Grotesk & JetBrains Mono
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js `v20+` or `v22+`
+- A free [Supabase](https://supabase.com/) project
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/niteshrajpurohitt/internals.git
+cd internals
+```
+
+### 2. Install dependencies
+
+```bash
+npm install
+```
+
+### 3. Environment Variables
+
+Create a `.env.local` file in the root directory:
+
+```env
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+```
+
+### 4. Database Setup
+
+Run the SQL migration in `supabase/schema.sql` inside your Supabase SQL editor to create the `companies`, `posts`, and `bookmarks` tables with Row Level Security.
+
+### 5. Run the dev server
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Visit [http://localhost:3000](http://localhost:3000) to view the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project Structure
 
-## Learn More
+```text
+internals/
+├── app/
+│   ├── layout.tsx             # Root layout, metadata, font definitions
+│   ├── page.tsx               # Homepage feed (ISR revalidated)
+│   ├── opengraph-image.tsx    # Dynamic 1200x630 OpenGraph generator
+│   └── api/
+│       └── sync/              # Ingest & RSS sync route handler
+├── components/
+│   ├── feed.tsx               # Interactive search, category & duration filters
+│   ├── post-card.tsx          # Technical article card with bookmark toggle
+│   ├── header.tsx             # Sticky navbar, search trigger, auth modal
+│   └── footer.tsx             # Fair use notice, privacy & delist modals
+├── lib/
+│   ├── rss.ts                 # Feed parser, company sources & veto regexes
+│   ├── supabase.ts            # Public read queries (posts, companies)
+│   ├── supabase-browser.ts    # Client-side singleton auth client
+│   └── supabase-server.ts     # Cookie-based SSR server client
+└── supabase/
+    └── schema.sql             # Database schema, indexes & RLS policies
+```
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Content & Fair Use Policy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Internals operates strictly as an index and discovery directory. We link directly out to original publisher URLs and do not mirror, cache, or paywall full-text articles. 
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+If you represent an engineering blog and wish to update metadata, modify indexing frequency, or delist your feed, please [open a GitHub Delist Request](https://github.com/niteshrajpurohitt/internals/issues/new?title=Delist+Request:+[Company+Name]).

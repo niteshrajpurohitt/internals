@@ -81,9 +81,12 @@ export function resolveCanonicalSection(tags: string[] = []): CategoryFilter {
 
 function getRelativeTime(dateString: string): string {
   try {
+    if (!dateString) return "Recent";
     const published = new Date(dateString);
+    if (isNaN(published.getTime())) return "Recent";
     const now = new Date();
     const diffMs = now.getTime() - published.getTime();
+    if (diffMs < 0) return "Just now";
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffHours / 24);
 

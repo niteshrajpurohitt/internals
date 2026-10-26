@@ -9,9 +9,18 @@ export const revalidate = 60; // ISR revalidate every 60 seconds
 
 export default async function HomePage() {
   const [companies, posts, totalCount, supabase] = await Promise.all([
-    getCompanies({ minPosts: 2 }),
-    getPosts({ offset: 0, limit: 20 }),
-    getPostCount(),
+    getCompanies({ minPosts: 2 }).catch((err) => {
+      console.warn("HomePage getCompanies warning:", err);
+      return [];
+    }),
+    getPosts({ offset: 0, limit: 20 }).catch((err) => {
+      console.warn("HomePage getPosts warning:", err);
+      return [];
+    }),
+    getPostCount().catch((err) => {
+      console.warn("HomePage getPostCount warning:", err);
+      return 0;
+    }),
     createServerClientInstance().catch(() => null),
   ]);
 

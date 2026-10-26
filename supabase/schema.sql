@@ -691,7 +691,7 @@ BEGIN
         new.email,
         coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'name', ''),
         coalesce(new.raw_user_meta_data->>'avatar_url', new.raw_user_meta_data->>'picture', ''),
-        coalesce(new.raw_user_meta_data->>'user_name', new.raw_user_meta_data->>'preferred_username', split_part(new.email, '@', 1))
+        coalesce(new.raw_user_meta_data->>'user_name', new.raw_user_meta_data->>'preferred_username', split_part(coalesce(new.email, 'user@domain.com'), '@', 1), 'engineer')
     )
     ON CONFLICT (id) DO UPDATE SET
         email = EXCLUDED.email,
@@ -699,6 +699,11 @@ BEGIN
         avatar_url = coalesce(EXCLUDED.avatar_url, public.profiles.avatar_url),
         updated_at = timezone('utc'::text, now());
     RETURN NEW;
+EXCEPTION
+    WHEN OTHERS THEN
+        -- Prevent profile trigger exceptions from aborting auth sign-up transactions
+        RAISE WARNING 'handle_new_user trigger error: %', SQLERRM;
+        RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 

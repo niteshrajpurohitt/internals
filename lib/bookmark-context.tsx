@@ -11,6 +11,7 @@ interface BookmarkContextType {
   toggleBookmark: (postId: string) => Promise<void>;
   bookmarkCount: number;
   isLoadingBookmarks: boolean;
+  bookmarkError: string | null;
   fetchSavedPosts: () => Promise<PostWithCompany[]>;
 }
 
@@ -20,6 +21,7 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
   const { user, openLoginModal } = useAuth();
   const [bookmarkedPostIds, setBookmarkedPostIds] = useState<Set<string>>(new Set());
   const [isLoadingBookmarks, setIsLoadingBookmarks] = useState(false);
+  const [bookmarkError, setBookmarkError] = useState<string | null>(null);
 
   const supabase = useMemo(() => createBrowserClientInstance(), []);
 
@@ -45,9 +47,11 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
 
         if (!error && data && mounted) {
           setBookmarkedPostIds(new Set(data.map((b: { post_id: string }) => b.post_id)));
+        } else if (error) {
+          console.warn("[Bookmarks] Error loading user bookmarks:", error.message);
         }
       } catch (err) {
-        console.warn("Failed to load user bookmarks:", err);
+        console.warn("[Bookmarks] Connection error:", err);
       } finally {
         if (mounted) setIsLoadingBookmarks(false);
       }
@@ -100,8 +104,12 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
 
         if (error) throw error;
       }
-    } catch (err) {
-      console.warn("Bookmark toggle error, reverting:", err);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Network error";
+      console.warn("[Bookmarks] Toggle failed, reverting state:", msg);
+      setBookmarkError("Could not update bookmark. Please verify connection.");
+      setTimeout(() => setBookmarkError(null), 4000);
+
       // Revert optimistic update
       setBookmarkedPostIds((prev) => {
         const reverted = new Set(prev);
@@ -137,13 +145,13 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
         .order("published_at", { ascending: false });
 
       if (error || !data) {
-        console.warn("Failed to fetch saved posts:", error?.message);
+        console.warn("[Bookmarks] Failed to fetch saved posts:", error?.message);
         return [];
       }
 
       return data as PostWithCompany[];
     } catch (err) {
-      console.warn("Error fetching saved posts:", err);
+      console.warn("[Bookmarks] Error fetching saved posts:", err);
       return [];
     }
   }, [user, bookmarkedPostIds, supabase]);
@@ -156,6 +164,7 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
         toggleBookmark,
         bookmarkCount: bookmarkedPostIds.size,
         isLoadingBookmarks,
+        bookmarkError,
         fetchSavedPosts,
       }}
     >

@@ -8,6 +8,8 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isLoginModalOpen: boolean;
+  authError: string | null;
+  setAuthError: (err: string | null) => void;
   openLoginModal: () => void;
   closeLoginModal: () => void;
   signInWithGithub: () => Promise<void>;
@@ -21,8 +23,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const supabase = useMemo(() => createBrowserClientInstance(), []);
+
+  // Detect OAuth callback errors from URL (e.g., ?auth_error=true)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("auth_error")) {
+        setAuthError("Authentication was interrupted or failed. Please try again.");
+        setIsLoginModalOpen(true);
+        params.delete("auth_error");
+        const cleanUrl =
+          window.location.pathname + (params.toString() ? `?${params.toString()}` : "");
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -36,7 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(session?.user ?? null);
           setIsLoading(false);
         }
-      } catch {
+      } catch (err) {
+        console.warn("[Auth] Session fetch warning:", err);
         if (mounted) {
           setUser(null);
           setIsLoading(false);
@@ -62,18 +81,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase]);
 
   const signInWithGithub = async () => {
+    setAuthError(null);
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: "github",
       options: {
         redirectTo: `${origin}/auth/callback`,
       },
     });
+    if (error) {
+      throw error;
+    }
   };
 
   const signInWithGoogle = async () => {
+    setAuthError(null);
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    await supabase.auth.signInWithOAuth({
+    const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: `${origin}/auth/callback`,
@@ -83,15 +107,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         },
       },
     });
+    if (error) {
+      throw error;
+    }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    try {
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.warn("[Auth] Sign out warning:", err);
+    } finally {
+      setUser(null);
+    }
   };
 
-  const openLoginModal = () => setIsLoginModalOpen(true);
-  const closeLoginModal = () => setIsLoginModalOpen(false);
+  const openLoginModal = () => {
+    setAuthError(null);
+    setIsLoginModalOpen(true);
+  };
+  const closeLoginModal = () => {
+    setAuthError(null);
+    setIsLoginModalOpen(false);
+  };
 
   return (
     <AuthContext.Provider
@@ -99,6 +137,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user,
         isLoading,
         isLoginModalOpen,
+        authError,
+        setAuthError,
         openLoginModal,
         closeLoginModal,
         signInWithGithub,

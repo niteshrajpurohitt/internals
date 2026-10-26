@@ -941,74 +941,80 @@ export async function fetchAndParseFeed(
     const parsedItems: ParsedFeedItem[] = [];
 
     for (const item of feed.items) {
-      const title = cleanTitle(item.title || "");
-      let link = (item.link || "").trim();
-      if (!title || !link || !link.startsWith("http")) continue;
+      try {
+        const title = cleanTitle(item.title || "");
+        let link = (item.link || "").trim();
+        if (!title || !link || !link.startsWith("http")) continue;
 
-      // Normalize any relative CMS host errors (e.g. Cockroach Labs local RSS generator)
-      if (link.startsWith("http://localhost:3000")) {
-        link = link.replace("http://localhost:3000", "https://www.cockroachlabs.com");
+        // Normalize any relative CMS host errors (e.g. Cockroach Labs local RSS generator)
+        if (link.startsWith("http://localhost:3000")) {
+          link = link.replace("http://localhost:3000", "https://www.cockroachlabs.com");
+        }
+
+        // Quality filter 0: Fast URL veto - reject changelog, release notes, press, announcements
+        const lowerLink = link.toLowerCase();
+        if (
+          lowerLink.includes("/changelog/") ||
+          lowerLink.includes("/changelog") ||
+          lowerLink.includes("/releases/") ||
+          lowerLink.includes("/release-notes/") ||
+          lowerLink.includes("/press/") ||
+          lowerLink.includes("/announcements/") ||
+          lowerLink.includes("disrupting-malicious-uses-of-ai")
+        ) {
+          continue;
+        }
+
+        // Fast 0ms skip: if already saved in database, don't do any processing
+        if (existingUrls && existingUrls.has(link)) {
+          continue;
+        }
+
+        const rawContent =
+          item.contentSnippet ||
+          item.content ||
+          item.summary ||
+          (item as Record<string, unknown>).description?.toString() ||
+          (item as Record<string, unknown>)["content:encoded"]?.toString() ||
+          "";
+
+        // Quality filter: discard PR, broken summaries, or non-technical content
+        if (isMarketingFluff(title, rawContent)) {
+          continue;
+        }
+
+        let summary = cleanHtmlSummary(rawContent);
+        if (!summary || summary.length < 25 || summary === "No content.") {
+          summary = `${title} — Architectural analysis and technical engineering implementation details.`;
+        }
+
+        const tags = detectCategories(title, summary, item.categories || []);
+        if (!tags || tags.length === 0) {
+          continue;
+        }
+        const read_time = estimateReadTime(rawContent);
+
+        let published_at = new Date().toISOString();
+        const rawDate = item.isoDate || item.pubDate;
+        if (rawDate) {
+          const parsedDate = new Date(rawDate);
+          if (!isNaN(parsedDate.getTime())) {
+            published_at = parsedDate.toISOString();
+          }
+        }
+
+        parsedItems.push({
+          title,
+          source_url: link,
+          summary,
+          tags,
+          read_time,
+          published_at,
+          slug: generateSlug(title),
+        });
+      } catch (itemErr) {
+        console.warn(`[RSS Parser] Skipping corrupt item in ${feedUrl}:`, itemErr);
       }
-
-      // Quality filter 0: Fast URL veto - reject changelog, release notes, press, announcements
-      const lowerLink = link.toLowerCase();
-      if (
-        lowerLink.includes("/changelog/") ||
-        lowerLink.includes("/changelog") ||
-        lowerLink.includes("/releases/") ||
-        lowerLink.includes("/release-notes/") ||
-        lowerLink.includes("/press/") ||
-        lowerLink.includes("/announcements/") ||
-        lowerLink.includes("disrupting-malicious-uses-of-ai")
-      ) {
-        continue;
-      }
-
-      // Fast 0ms skip: if already saved in database, don't do any processing
-      if (existingUrls && existingUrls.has(link)) {
-        continue;
-      }
-
-      const rawContent =
-        item.contentSnippet ||
-        item.content ||
-        item.summary ||
-        (item as Record<string, unknown>).description?.toString() ||
-        (item as Record<string, unknown>)["content:encoded"]?.toString() ||
-        "";
-
-      // Quality filter: discard PR, broken summaries, or non-technical content
-      if (isMarketingFluff(title, rawContent)) {
-        continue;
-      }
-
-      let summary = cleanHtmlSummary(rawContent);
-      if (!summary || summary.length < 25 || summary === "No content.") {
-        summary = `${title} — Architectural analysis and technical engineering implementation details.`;
-      }
-
-      const tags = detectCategories(title, summary, item.categories || []);
-      if (!tags || tags.length === 0) {
-        continue;
-      }
-      const read_time = estimateReadTime(rawContent);
-
-      let published_at = new Date().toISOString();
-      if (item.isoDate) {
-        published_at = new Date(item.isoDate).toISOString();
-      } else if (item.pubDate) {
-        published_at = new Date(item.pubDate).toISOString();
-      }
-
-      parsedItems.push({
-        title,
-        source_url: link,
-        summary,
-        tags,
-        read_time,
-        published_at,
-        slug: generateSlug(title),
-      });
     }
 
     return parsedItems;

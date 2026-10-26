@@ -32,7 +32,7 @@ const CATEGORIES: CategoryFilter[] = [
 export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const { searchQuery, setSearchQuery } = useSearch();
   const { user, openLoginModal } = useAuth();
-  const { bookmarkCount, fetchSavedPosts, bookmarkedPostIds } = useBookmarks();
+  const { bookmarkCount, fetchSavedPosts, bookmarkedPostIds, bookmarkError } = useBookmarks();
 
   const [posts, setPosts] = useState<PostWithCompany[]>(initialPosts);
   const [hasMore, setHasMore] = useState(
@@ -43,6 +43,8 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("all");
   const [selectedDuration, setSelectedDuration] = useState<string>("all");
   const [isFiltering, setIsFiltering] = useState(false);
+  const [filterError, setFilterError] = useState<string | null>(null);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [currentTotalCount, setCurrentTotalCount] = useState<number | undefined>(totalCount);
 
   useEffect(() => {
@@ -128,11 +130,15 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
 
     const abortController = new AbortController();
     setIsFiltering(true);
+    setFilterError(null);
     const timer = setTimeout(async () => {
       try {
         const url = buildQueryUrl(0, 20);
         const res = await fetch(url, { signal: abortController.signal });
-        if (!res.ok) throw new Error("Failed to filter posts");
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => ({}));
+          throw new Error(errBody.error || `HTTP error ${res.status}`);
+        }
         const data = await res.json();
         setPosts(data.posts || []);
         setCurrentTotalCount(data.totalCount);
@@ -140,6 +146,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
       } catch (err: unknown) {
         if (err instanceof Error && err.name === "AbortError") return;
         console.error("Filter error:", err);
+        setFilterError(err instanceof Error ? err.message : "Failed to load articles");
       } finally {
         if (!abortController.signal.aborted) setIsFiltering(false);
       }
@@ -151,10 +158,14 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const loadMorePosts = async () => {
     if (isLoadingMore || !hasMore || isFiltering) return;
     setIsLoadingMore(true);
+    setLoadMoreError(null);
     try {
       const url = buildQueryUrl(posts.length, 20);
       const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to fetch more posts");
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || `HTTP error ${res.status}`);
+      }
       const data = await res.json();
       if (data.posts && data.posts.length > 0) {
         setPosts((prev) => {
@@ -169,8 +180,9 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
       } else {
         setHasMore(false);
       }
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Error loading more posts:", err);
+      setLoadMoreError(err instanceof Error ? err.message : "Failed to load more posts");
     } finally {
       setIsLoadingMore(false);
     }
@@ -187,6 +199,8 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     setSelectedCompanyId("all");
     setSelectedDuration("all");
     setSearchQuery("");
+    setFilterError(null);
+    setLoadMoreError(null);
     if (categoryBarRef.current) {
       categoryBarRef.current.scrollTo({ left: 0, behavior: "smooth" });
     }
@@ -476,6 +490,24 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
                 }}
               />
             ))
+          ) : filterError ? (
+            <div className="flex w-full flex-col items-center justify-center py-12 text-center">
+              <div className="border border-red-500/30 bg-red-500/10 p-6 font-mono text-xs dark:border-red-400/30">
+                <div className="mb-2 font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
+                  [NETWORK_QUERY_ERROR]
+                </div>
+                <p className="mb-4 text-neutral-950/70 dark:text-white/70">
+                  {filterError}
+                </p>
+                <button
+                  type="button"
+                  onClick={handleResetFilters}
+                  className="inline-flex h-8 cursor-pointer items-center justify-center border border-neutral-950 bg-neutral-950 px-5 font-mono text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-neutral-800 active:scale-98 dark:border-white dark:bg-white dark:text-black dark:hover:bg-white/90"
+                >
+                  Reset &amp; Retry
+                </button>
+              </div>
+            </div>
           ) : (
             <div className="flex w-full justify-center py-12">
               <button
@@ -511,6 +543,30 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               <span>SHOW MORE</span>
             )}
           </button>
+
+          {loadMoreError && (
+            <div className="mt-3 flex items-center gap-2 font-mono text-xs text-red-600 dark:text-red-400">
+              <span>{loadMoreError}</span>
+              <button
+                type="button"
+                onClick={loadMorePosts}
+                className="font-bold underline cursor-pointer"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Floating Bookmark Feedback Toast */}
+      {bookmarkError && (
+        <div
+          role="alert"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 border border-red-500/40 bg-white px-4 py-2.5 font-mono text-xs text-neutral-950 shadow-2xl dark:border-red-400/40 dark:bg-[#111111] dark:text-white"
+        >
+          <span className="font-bold text-red-600 dark:text-red-400">[ERROR]</span>
+          <span>{bookmarkError}</span>
         </div>
       )}
     </div>

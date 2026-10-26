@@ -84,8 +84,12 @@ export async function getCompanies(options?: { minPosts?: number }): Promise<Com
       .select("id, name, slug, website_url, feed_url, created_at, posts(count)")
       .order("name", { ascending: true });
 
-    if (error || !data) {
-      console.warn("Supabase query returned empty or failed:", error?.message);
+    if (error) {
+      console.warn("Supabase query failed:", error.message);
+      throw new Error(`Failed to fetch companies: ${error.message}`);
+    }
+
+    if (!data) {
       return [];
     }
 
@@ -105,8 +109,8 @@ export async function getCompanies(options?: { minPosts?: number }): Promise<Com
 
     return formatted;
   } catch (err) {
-    console.warn("Supabase connection error:", err);
-    return [];
+    console.warn("Supabase companies connection error:", err);
+    throw err;
   }
 }
 
@@ -393,12 +397,14 @@ export async function getPostCount(options?: PostQueryOptions): Promise<number> 
     }
 
     const { count, error } = await query;
-    if (error || typeof count !== "number") {
-      return 0;
+    if (error) {
+      console.warn("Supabase count query failed:", error.message);
+      throw new Error(`Count query failed: ${error.message}`);
     }
-    return count;
-  } catch {
-    return 0;
+    return typeof count === "number" ? count : 0;
+  } catch (err) {
+    console.warn("Supabase count error:", err);
+    throw err;
   }
 }
 
@@ -495,8 +501,12 @@ export async function getPosts(options?: PostQueryOptions): Promise<PostWithComp
 
     const { data, error } = await query;
 
-    if (error || !data) {
-      console.warn("Supabase query returned empty or failed:", error?.message);
+    if (error) {
+      console.warn("Supabase posts query failed:", error.message);
+      throw new Error(`Posts query failed: ${error.message}`);
+    }
+
+    if (!data) {
       return [];
     }
 
@@ -514,7 +524,7 @@ export async function getPosts(options?: PostQueryOptions): Promise<PostWithComp
 
     return normalized;
   } catch (err) {
-    console.warn("Supabase connection error:", err);
-    return [];
+    console.warn("Supabase posts connection error:", err);
+    throw err;
   }
 }

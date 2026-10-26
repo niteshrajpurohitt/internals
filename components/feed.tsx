@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 
 import { ChevronDown } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
 import { PostWithCompany, Company, CategoryFilter } from "@/lib/types";
 import { interleavePostsByCompany } from "@/lib/supabase";
 import { useSearch } from "@/lib/search-context";
@@ -45,6 +46,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const [isFiltering, setIsFiltering] = useState(false);
   const [filterError, setFilterError] = useState<string | null>(null);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+  const [retryTrigger, setRetryTrigger] = useState(0);
   const [currentTotalCount, setCurrentTotalCount] = useState<number | undefined>(totalCount);
 
   useEffect(() => {
@@ -145,7 +147,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
         setHasMore(data.hasMore);
       } catch (err: unknown) {
         if (err instanceof Error && err.name === "AbortError") return;
-        console.error("Filter error:", err);
+        setPosts([]);
         setFilterError(err instanceof Error ? err.message : "Failed to load articles");
       } finally {
         if (!abortController.signal.aborted) setIsFiltering(false);
@@ -153,7 +155,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     }, searchQuery ? 250 : 0);
 
     return () => { clearTimeout(timer); abortController.abort(); };
-  }, [selectedCategory, selectedCompanyId, selectedDuration, searchQuery, initialPosts, totalCount, user, fetchSavedPosts]);
+  }, [selectedCategory, selectedCompanyId, selectedDuration, searchQuery, retryTrigger, initialPosts, totalCount, user, fetchSavedPosts]);
 
   const loadMorePosts = async () => {
     if (isLoadingMore || !hasMore || isFiltering) return;
@@ -181,7 +183,6 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
         setHasMore(false);
       }
     } catch (err: unknown) {
-      console.error("Error loading more posts:", err);
       setLoadMoreError(err instanceof Error ? err.message : "Failed to load more posts");
     } finally {
       setIsLoadingMore(false);
@@ -494,17 +495,17 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
             <div className="flex w-full flex-col items-center justify-center py-12 text-center">
               <div className="border border-red-500/30 bg-red-500/10 p-6 font-mono text-xs dark:border-red-400/30">
                 <div className="mb-2 font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
-                  [NETWORK_QUERY_ERROR]
+                  Something went wrong
                 </div>
                 <p className="mb-4 text-neutral-950/70 dark:text-white/70">
-                  {filterError}
+                  Cannot load posts right now. Please check your connection.
                 </p>
                 <button
                   type="button"
-                  onClick={handleResetFilters}
+                  onClick={() => setRetryTrigger((prev) => prev + 1)}
                   className="inline-flex h-8 cursor-pointer items-center justify-center border border-neutral-950 bg-neutral-950 px-5 font-mono text-xs font-bold uppercase tracking-wider text-white transition-all hover:bg-neutral-800 active:scale-98 dark:border-white dark:bg-white dark:text-black dark:hover:bg-white/90"
                 >
-                  Reset &amp; Retry
+                  Retry
                 </button>
               </div>
             </div>
@@ -524,8 +525,8 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
         </div>
       </div>
 
-      {/* Show More */}
-      {hasMore && (
+      {/* Show More — only displayed when articles are loaded and not in an error state */}
+      {hasMore && posts.length > 0 && !filterError && (
         <div className="flex flex-col items-center justify-center pb-2 pt-8">
           <button
             type="button"
@@ -559,16 +560,21 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
         </div>
       )}
 
-      {/* Floating Bookmark Feedback Toast */}
-      {bookmarkError && (
-        <div
-          role="alert"
-          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 border border-red-500/40 bg-white px-4 py-2.5 font-mono text-xs text-neutral-950 shadow-2xl dark:border-red-400/40 dark:bg-[#111111] dark:text-white"
-        >
-          <span className="font-bold text-red-600 dark:text-red-400">[ERROR]</span>
-          <span>{bookmarkError}</span>
-        </div>
-      )}
+      {/* Floating Bookmark Feedback Toast with Sleek Slide-Up Animation */}
+      <AnimatePresence>
+        {bookmarkError && (
+          <motion.div
+            role="alert"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="fixed bottom-6 right-6 z-50 flex items-center border border-red-500/40 bg-white px-4 py-2.5 font-mono text-xs text-neutral-950 shadow-2xl dark:border-red-400/40 dark:bg-[#111111] dark:text-white"
+          >
+            <span>{bookmarkError}</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

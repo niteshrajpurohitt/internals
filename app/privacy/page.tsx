@@ -18,7 +18,7 @@ export default function PrivacyPage() {
             href="/"
             className="inline-flex items-center gap-1.5 font-mono text-xs text-neutral-950/60 transition-colors hover:text-neutral-950 dark:text-white/60 dark:hover:text-white"
           >
-            <span>← Back to feed</span>
+            <span>Back to feed</span>
           </Link>
         </div>
 

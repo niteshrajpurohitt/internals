@@ -64,8 +64,8 @@ export function LoginModal() {
       await signInWithGithub();
     } catch (err: unknown) {
       setLoadingProvider(null);
-      const msg = err instanceof Error ? err.message : "Failed to connect to GitHub";
-      setAuthError(`OAuth failure: ${msg}`);
+      const msg = err instanceof Error ? err.message : "Unable to connect to GitHub";
+      setAuthError(msg);
     }
   };
 
@@ -76,8 +76,8 @@ export function LoginModal() {
       await signInWithGoogle();
     } catch (err: unknown) {
       setLoadingProvider(null);
-      const msg = err instanceof Error ? err.message : "Failed to connect to Google";
-      setAuthError(`OAuth failure: ${msg}`);
+      const msg = err instanceof Error ? err.message : "Unable to connect to Google";
+      setAuthError(msg);
     }
   };
 
@@ -123,7 +123,6 @@ export function LoginModal() {
         {/* Error Notification Banner */}
         {authError && (
           <div className="mt-3 border border-red-500/40 bg-red-500/10 p-2.5 font-mono text-[11px] leading-tight text-red-600 dark:border-red-400/40 dark:text-red-400">
-            <span className="font-bold">[AUTH_ERROR] </span>
             {authError}
           </div>
         )}

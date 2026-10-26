@@ -24,7 +24,7 @@ export default function ErrorBoundary({
           <div className="mb-4 flex items-center justify-center gap-2 border-b border-neutral-950/15 pb-3 font-mono text-xs dark:border-white/15">
             <Logo className="h-4 w-4 text-neutral-950 dark:text-white" />
             <span className="font-bold tracking-wider text-red-600 dark:text-red-400">
-              SYS_FAULT: RUNTIME_EXCEPTION
+              System Error
             </span>
           </div>
 

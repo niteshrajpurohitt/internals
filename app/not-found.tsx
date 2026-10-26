@@ -11,7 +11,7 @@ export default function NotFound() {
           <div className="mb-4 flex items-center justify-center gap-2 border-b border-neutral-950/15 pb-3 font-mono text-xs dark:border-white/15">
             <Logo className="h-4 w-4 text-neutral-950 dark:text-white" />
             <span className="font-bold tracking-wider text-neutral-950/60 dark:text-white/60">
-              STATUS: 404_NOT_FOUND
+              404 — Page Not Found
             </span>
           </div>
 
@@ -28,7 +28,7 @@ export default function NotFound() {
               href="/"
               className="inline-flex h-9 items-center justify-center border border-neutral-950 bg-neutral-950 px-6 font-bold uppercase tracking-wider text-white transition-all hover:bg-neutral-800 active:scale-98 dark:border-white dark:bg-white dark:text-black dark:hover:bg-neutral-200"
             >
-              ← Back to Main Feed
+              Back to Feed
             </Link>
           </div>
         </div>

@@ -18,7 +18,7 @@ export default function GlobalError({
       <body className="flex min-h-screen items-center justify-center bg-[#080808] p-4 font-mono text-white antialiased">
         <div className="w-full max-w-md border border-white/20 bg-[#111111] p-6 text-center shadow-xl">
           <div className="mb-4 text-xs font-bold tracking-widest text-red-400">
-            [CRITICAL_CORE_EXCEPTION]
+            System Error
           </div>
           <h1 className="text-lg font-bold">Fatal System Failure</h1>
           <p className="mt-2 text-xs text-white/60">

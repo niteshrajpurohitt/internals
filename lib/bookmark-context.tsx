@@ -75,6 +75,13 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // Immediate offline check: prevent false optimistic state
+    if (typeof navigator !== "undefined" && !navigator.onLine) {
+      setBookmarkError("You are offline. Cannot save bookmarks.");
+      setTimeout(() => setBookmarkError(null), 4000);
+      return;
+    }
+
     const wasBookmarked = bookmarkedPostIds.has(postId);
 
     // Optimistic state update
@@ -89,21 +96,22 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
     });
 
     try {
-      if (wasBookmarked) {
-        const { error } = await supabase
-          .from("user_bookmarks")
-          .delete()
-          .eq("user_id", user.id)
-          .eq("post_id", postId);
+      const networkPromise = wasBookmarked
+        ? supabase
+            .from("user_bookmarks")
+            .delete()
+            .eq("user_id", user.id)
+            .eq("post_id", postId)
+        : supabase
+            .from("user_bookmarks")
+            .insert({ user_id: user.id, post_id: postId });
 
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from("user_bookmarks")
-          .insert({ user_id: user.id, post_id: postId });
+      const timeoutPromise = new Promise<{ error: Error }>((_, reject) =>
+        setTimeout(() => reject(new Error("Connection timed out")), 5000)
+      );
 
-        if (error) throw error;
-      }
+      const result = (await Promise.race([networkPromise, timeoutPromise])) as any;
+      if (result?.error) throw result.error;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Network error";
       console.warn("[Bookmarks] Toggle failed, reverting state:", msg);

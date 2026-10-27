@@ -669,9 +669,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Public profiles are viewable by everyone" 
+CREATE POLICY "Users can view their own profile" 
 ON public.profiles FOR SELECT 
-USING (true);
+USING (auth.uid() = id);
 
 CREATE POLICY "Users can insert their own profile" 
 ON public.profiles FOR INSERT 
@@ -683,7 +683,11 @@ USING (auth.uid() = id);
 
 -- Trigger to automatically create a profile entry when a user signs in via OAuth
 CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
 BEGIN
     INSERT INTO public.profiles (id, email, full_name, avatar_url, user_name)
     VALUES (

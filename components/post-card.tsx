@@ -105,6 +105,10 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const isSaved = isBookmarked(post.id);
   const companyName = post.company?.name || post.companies?.name || "Engineering";
+  const safeSourceUrl =
+    post.source_url && /^https?:\/\//i.test(post.source_url)
+      ? post.source_url
+      : "#";
 
   return (
     <motion.article
@@ -116,7 +120,7 @@ export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
       className="group cad-crosshair relative flex flex-col justify-between border border-neutral-950/20 bg-white p-4.5 transition-colors duration-150 hover:border-neutral-950/50 sm:p-5 dark:border-white/20 dark:bg-[#111111] dark:hover:border-white/50"
     >
       <a
-        href={post.source_url}
+        href={safeSourceUrl}
         target="_blank"
         rel="noopener noreferrer"
         onFocus={() => setIsHovered(true)}

@@ -1,9 +1,42 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { getServiceSupabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+function isTimingSafeMatch(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
+
+export async function GET(req: NextRequest) {
+  const syncSecret = process.env.SYNC_SECRET;
+  const isDev = process.env.NODE_ENV === "development";
+
+  if (!syncSecret && !isDev) {
+    return NextResponse.json(
+      { error: "Server configuration error: SYNC_SECRET is not configured on the server" },
+      { status: 500 }
+    );
+  }
+
+  if (syncSecret) {
+    const authHeader = req.headers.get("authorization");
+    const searchParams = req.nextUrl.searchParams;
+    const providedSecret =
+      (authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null) ||
+      searchParams.get("secret")?.trim();
+
+    if (!providedSecret || !isTimingSafeMatch(providedSecret, syncSecret)) {
+      return NextResponse.json(
+        { error: "Unauthorized: Invalid or missing sync secret" },
+        { status: 401 }
+      );
+    }
+  }
+
   const client = getServiceSupabase();
   if (!client) {
     return NextResponse.json({ error: "Supabase client not initialized" }, { status: 500 });

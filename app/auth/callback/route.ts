@@ -4,16 +4,36 @@ import { createServerClient } from "@supabase/ssr";
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  
+  // 1. Sanitize 'next' redirect target to prevent Open Redirect attacks
+  let next = searchParams.get("next") ?? "/";
+  if (!next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) {
+    next = "/";
+  }
 
-  // Determine correct redirect target (handling proxies / forwarded hosts)
+  // 2. Determine safe redirect origin (prevent Host Header Poisoning)
   const forwardedHost = request.headers.get("x-forwarded-host");
+  const requestHost = request.headers.get("host");
   const isLocalEnv = process.env.NODE_ENV === "development";
-  const redirectTarget = isLocalEnv
-    ? `${origin}${next}`
-    : forwardedHost
-    ? `https://${forwardedHost}${next}`
-    : `${origin}${next}`;
+  const configuredHost = process.env.NEXT_PUBLIC_SITE_URL
+    ? (() => {
+        try {
+          return new URL(process.env.NEXT_PUBLIC_SITE_URL).host;
+        } catch {
+          return null;
+        }
+      })()
+    : null;
+
+  let targetOrigin = origin;
+  if (!isLocalEnv && forwardedHost) {
+    // Only trust forwarded host if it matches request host or configured site URL
+    if (forwardedHost === requestHost || (configuredHost && forwardedHost === configuredHost)) {
+      targetOrigin = `https://${forwardedHost}`;
+    }
+  }
+
+  const redirectTarget = `${targetOrigin}${next}`;
 
   if (code) {
     // 1. Create the redirect response object FIRST

@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { getServiceSupabase } from "@/lib/supabase";
 import { fetchAndParseFeed, detectCategories, isMarketingFluff, decodeHtmlEntities, cleanTitle } from "@/lib/rss";
 import { LANDMARK_POSTMORTEMS, LANDMARK_CLASSICS } from "@/lib/classics";
 
 export const maxDuration = 60; // Allow up to 60s for full feed sync
 export const dynamic = "force-dynamic";
+
+function isTimingSafeMatch(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+  if (bufA.length !== bufB.length) return false;
+  return crypto.timingSafeEqual(bufA, bufB);
+}
 
 export async function GET(req: NextRequest) {
   return handleSync(req);
@@ -17,14 +25,25 @@ export async function POST(req: NextRequest) {
 async function handleSync(req: NextRequest) {
   const startTime = Date.now();
 
-  // 1. Optional Secret Guard
+  // 1. Mandatory Secret Guard (fail-closed in production)
   const syncSecret = process.env.SYNC_SECRET;
+  const isDev = process.env.NODE_ENV === "development";
+
+  if (!syncSecret && !isDev) {
+    return NextResponse.json(
+      { error: "Server configuration error: SYNC_SECRET is not configured on the server" },
+      { status: 500 }
+    );
+  }
+
   if (syncSecret) {
     const authHeader = req.headers.get("authorization");
     const searchParams = req.nextUrl.searchParams;
-    const providedSecret = authHeader?.replace("Bearer ", "") || searchParams.get("secret");
+    const providedSecret =
+      (authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null) ||
+      searchParams.get("secret")?.trim();
 
-    if (providedSecret !== syncSecret) {
+    if (!providedSecret || !isTimingSafeMatch(providedSecret, syncSecret)) {
       return NextResponse.json(
         { error: "Unauthorized: Invalid or missing sync secret" },
         { status: 401 }

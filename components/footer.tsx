@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { ExternalLink } from "lucide-react";
 import { Container } from "@/components/container";
 import { Logo } from "@/components/logo";
+import TechText from "@/components/tech-text";
 
 export function Footer() {
   const [activeModal, setActiveModal] = useState<"privacy" | "delist" | null>(null);
@@ -20,59 +21,75 @@ export function Footer() {
   }, [activeModal]);
 
   return (
-    <footer className="mt-16 w-full border-t border-neutral-950/15 bg-[#f4f3ef] py-10 font-mono text-xs text-neutral-950/70 dark:border-white/15 dark:bg-[#080808] dark:text-white/70">
-      <Container size="default">
-        {/* Top Info Strip */}
-        <div className="flex flex-col justify-between gap-6 pb-8 md:flex-row md:items-center">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2 font-bold tracking-tight text-neutral-950 dark:text-white">
-              <Logo className="h-4 w-4 text-neutral-950 dark:text-white" size={16} />
-              <span className="text-sm font-bold tracking-tight">Internals</span>
+    <footer className="relative mt-16 w-full overflow-hidden border-t border-neutral-950/15 bg-[#f4f3ef] font-mono text-xs text-neutral-950/70 dark:border-white/15 dark:bg-[#080808] dark:text-white/70">
+      <Container size="default" className="pt-8 pb-5">
+        {/* Single row: tagline left, links+copyright right */}
+        <div className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+          {/* Left: tagline only */}
+          <p className="max-w-xs font-sans text-[11px] leading-relaxed text-neutral-950/50 dark:text-white/50">
+            Technical blogs from top engineering teams.
+            <br />
+            Direct links straight to the source.
+          </p>
+
+          {/* Right: links + copyright stacked */}
+          <div className="flex flex-col items-start gap-2.5 md:items-end">
+            <div className="flex flex-wrap items-center gap-3 text-[11px]">
+              <a
+                href="https://github.com/niteshrajpurohitt/internals"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 transition-colors hover:text-neutral-950 dark:hover:text-white"
+              >
+                <span>GitHub</span>
+                <ExternalLink className="h-3 w-3 opacity-50" />
+              </a>
+              <span className="text-neutral-950/20 dark:text-white/20">·</span>
+              <button
+                type="button"
+                onClick={() => setActiveModal("privacy")}
+                className="cursor-pointer transition-colors hover:text-neutral-950 dark:hover:text-white"
+              >
+                Privacy
+              </button>
+              <span className="text-neutral-950/20 dark:text-white/20">·</span>
+              <button
+                type="button"
+                onClick={() => setActiveModal("delist")}
+                className="cursor-pointer transition-colors hover:text-neutral-950 dark:hover:text-white"
+              >
+                Delist
+              </button>
             </div>
-            <p className="max-w-md font-sans text-xs text-neutral-950/60 dark:text-white/60">
-              Technical blogs from top engineering teams. Direct links straight to the source.
-            </p>
+            <span className="text-[10px] text-neutral-950/35 dark:text-white/35">
+              © {new Date().getFullYear()} Internals. All rights reserved.
+            </span>
           </div>
-
-          {/* Action Links */}
-          <div className="flex flex-wrap items-center gap-4 text-xs">
-            <a
-              href="https://github.com/niteshrajpurohitt/internals"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 transition-colors hover:text-neutral-950 dark:hover:text-white"
-            >
-              <span>GitHub</span>
-              <ExternalLink className="h-3 w-3 opacity-60" />
-            </a>
-
-            <span className="text-neutral-950/25 dark:text-white/25">•</span>
-
-            <button
-              type="button"
-              onClick={() => setActiveModal("privacy")}
-              className="cursor-pointer transition-colors hover:text-neutral-950 dark:hover:text-white"
-            >
-              Privacy Policy
-            </button>
-
-            <span className="text-neutral-950/25 dark:text-white/25">•</span>
-
-            <button
-              type="button"
-              onClick={() => setActiveModal("delist")}
-              className="cursor-pointer transition-colors hover:text-neutral-950 dark:hover:text-white"
-            >
-              Delist Policy
-            </button>
-          </div>
-        </div>
-
-        {/* Bottom Sub-bar */}
-        <div className="border-t border-neutral-950/10 pt-6 text-[11px] text-neutral-950/50 dark:border-white/10 dark:text-white/50">
-          <span>© {new Date().getFullYear()} Internals. All rights reserved.</span>
         </div>
       </Container>
+
+      {/* Full-bleed interactive wordmark */}
+      <div className="opacity-[0.15]" style={{ height: "clamp(3rem, 14vw, 12rem)" }}>
+        <TechText
+          text="Internals"
+          fontWeight={700}
+          fontSize={220}
+          letterSpacing={-0.05}
+          reveal="letter"
+          dashLength={4}
+          dashGap={2}
+          strokeWidth={2}
+          specks={6}
+          selection={true}
+          labels={false}
+          draggable={false}
+          clickKick={true}
+          intro="none"
+          sweep={false}
+          speed={0.6}
+          guides={false}
+        />
+      </div>
 
       {/* Privacy Policy Modal */}
       {activeModal === "privacy" && (

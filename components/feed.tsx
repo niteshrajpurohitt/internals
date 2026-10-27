@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { PostWithCompany, Company, CategoryFilter } from "@/lib/types";
-import { interleavePostsByCompany } from "@/lib/supabase";
+import { interleavePostsByCompany } from "@/lib/feed-utils";
 import { useSearch } from "@/lib/search-context";
 import { useAuth } from "@/lib/auth-context";
 import { useBookmarks } from "@/lib/bookmark-context";

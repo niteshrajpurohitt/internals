@@ -11,14 +11,14 @@ export const metadata: Metadata = {
 export default function PrivacyPage() {
   return (
     <main className="flex min-h-screen flex-col justify-between">
-      <Container size="default" className="pt-10 pb-16 sm:pt-14 sm:pb-20">
+      <Container size="default" className="pt-4 pb-16 sm:pt-6 sm:pb-20">
         {/* Navigation link */}
         <div className="mb-8">
           <Link
             href="/"
             className="inline-flex items-center gap-1.5 font-mono text-xs text-neutral-950/60 transition-colors hover:text-neutral-950 dark:text-white/60 dark:hover:text-white"
           >
-            <span>Back to feed</span>
+            <span>Back to home</span>
           </Link>
         </div>
 

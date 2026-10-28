@@ -7,6 +7,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { BookmarkProvider } from "@/lib/bookmark-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import { LoginModal } from "@/components/login-modal";
+import { Analytics } from "@vercel/analytics/next";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -85,6 +86,7 @@ export default function RootLayout({
             </BookmarkProvider>
           </AuthProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );

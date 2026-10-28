@@ -13,7 +13,7 @@ Most company blogs are buried beneath marketing announcements, product releases,
 
 **Internals** aggregates and filters technical writing directly from world-class engineering teams (Cloudflare, OpenAI, Stripe, Uber, Netflix, Figma, Datadog, and 40+ more). 
 
-Every post links directly to the original publisher — zero paywalls, zero full-text scraping, zero algorithms.
+Every post links directly to the original publisher — zero paywalls, zero full-text scraping, zero algorithmic bias.
 
 ---
 
@@ -30,16 +30,20 @@ Every post links directly to the original publisher — zero paywalls, zero full
   - *AI & Machine Learning*
 - **Cross-Device Bookmarking**: Save articles to your private reading list with GitHub or Google authentication.
 - **CAD Architectural Design**: Minimalist technical aesthetic built with custom CAD dimension lines, corner markers, Space Grotesk, and JetBrains Mono.
-- **Automated Sync Engine**: Background ingestion pipeline running via GitHub Actions on a 1-hour cron schedule.
+- **Automated Sync Engine**: Background ingestion pipeline running via GitHub Actions on a 6-hour cron schedule with secure bearer token authorization.
+- **High-Concurrency Edge Caching**: Native Vercel Edge caching with `stale-while-revalidate` on feed APIs to protect PostgreSQL database connections during viral traffic spikes.
+- **Privacy-Friendly Analytics**: Built-in Vercel Analytics tracking pageviews and referrers with zero tracking cookies.
 
 ---
 
 ## Tech Stack
 
-- **Framework**: [Next.js 16](https://nextjs.org/) (App Router, React 19, Server Components)
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router, Turbopack, React 19, Server Components)
 - **Database & Auth**: [Supabase](https://supabase.com/) (PostgreSQL, Row Level Security, `@supabase/ssr`)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **Animations**: [Motion](https://motion.dev/)
+- **Analytics**: [Vercel Analytics](https://vercel.com/analytics)
+- **Security**: Content Security Policy (CSP), `X-Frame-Options: DENY`, strict referrer policies
 - **Typography**: Space Grotesk & JetBrains Mono
 
 ---
@@ -73,7 +77,10 @@ NEXT_PUBLIC_SITE_URL=http://localhost:3000
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+SYNC_SECRET=your-secure-random-secret-for-cron-sync
 ```
+
+> **Note on `SYNC_SECRET`**: Protects the `/api/sync` endpoint from unauthorized triggers. Must match the `SYNC_SECRET` repository secret configured in your GitHub Actions workflow.
 
 ### 4. Database Setup
 
@@ -94,18 +101,23 @@ Visit [http://localhost:3000](http://localhost:3000) to view the application.
 ```text
 internals/
 ├── app/
-│   ├── layout.tsx             # Root layout, metadata, font definitions
+│   ├── layout.tsx             # Root layout, metadata, analytics & font definitions
 │   ├── page.tsx               # Homepage feed (ISR revalidated)
-│   ├── opengraph-image.tsx    # Dynamic 1200x630 OpenGraph generator
+│   ├── robots.ts              # Dynamic search engine crawler rules
+│   ├── sitemap.ts             # Dynamic XML sitemap for SEO discovery
+│   ├── opengraph-image.tsx    # Dynamic 1200x630 OpenGraph card generator
 │   └── api/
-│       └── sync/              # Ingest & RSS sync route handler
+│       ├── posts/             # Paginated feed queries with edge caching
+│       ├── audit/             # Feed content quality & veto auditing endpoint
+│       └── sync/              # Ingest & RSS sync route handler (guarded by SYNC_SECRET)
 ├── components/
 │   ├── feed.tsx               # Interactive search, category & duration filters
 │   ├── post-card.tsx          # Technical article card with bookmark toggle
 │   ├── header.tsx             # Sticky navbar, search trigger, auth modal
-│   └── footer.tsx             # Fair use notice, privacy & delist modals
+│   └── footer.tsx             # Fair use notice, privacy & terms links
 ├── lib/
 │   ├── rss.ts                 # Feed parser, company sources & veto regexes
+│   ├── classics.ts            # Landmark postmortems & historic articles registry
 │   ├── supabase.ts            # Public read queries (posts, companies)
 │   ├── supabase-browser.ts    # Client-side singleton auth client
 │   └── supabase-server.ts     # Cookie-based SSR server client

@@ -27,11 +27,18 @@ export async function GET(req: NextRequest) {
     const hasMore =
       totalCount > 0 ? offset + posts.length < totalCount : posts.length === limit;
 
-    return NextResponse.json({
-      posts,
-      totalCount,
-      hasMore,
-    });
+    return NextResponse.json(
+      {
+        posts,
+        totalCount,
+        hasMore,
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=120, stale-while-revalidate=300",
+        },
+      }
+    );
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(

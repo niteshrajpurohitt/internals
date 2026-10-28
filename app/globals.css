@@ -66,12 +66,14 @@
 }
 
 /* ─── Base ───────────────────────────────────────────────────────────────── */
-html {
+html,
+body {
   background-color: #080808;
   color-scheme: dark;
 }
 
-html[data-theme="light"] {
+html[data-theme="light"],
+html[data-theme="light"] body {
   background-color: #f4f3ef;
   color-scheme: light;
 }

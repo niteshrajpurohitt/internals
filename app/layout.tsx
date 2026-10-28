@@ -65,19 +65,19 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
     >
       <head>
-        {/* Anti-FOUC: apply stored theme and default canvas color before first paint */}
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `html{background-color:#080808;color-scheme:dark;}html[data-theme="light"]{background-color:#f4f3ef;color-scheme:light;}`,
-          }}
-        />
+        {/* Anti-FOUC: determine theme from storage synchronously BEFORE first paint */}
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('internals-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`,
           }}
         />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `html,body{background-color:#080808 !important;color-scheme:dark;}html[data-theme="light"],html[data-theme="light"] body{background-color:#f4f3ef !important;color-scheme:light;}`,
+          }}
+        />
       </head>
-      <body className="relative flex min-h-screen flex-col overflow-x-hidden bg-[#f4f3ef] font-sans text-neutral-950 antialiased dark:bg-[#080808] dark:text-white">
+      <body className="relative flex min-h-screen flex-col overflow-x-hidden font-sans text-neutral-950 antialiased dark:text-white">
         {/* Masked CAD Drafting Grid Layer */}
         <div className="cad-grid-layer pointer-events-none fixed inset-0 z-0" aria-hidden="true" />
         <ThemeProvider>

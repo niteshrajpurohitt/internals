@@ -38,7 +38,7 @@ Every post links directly to the original publisher — zero paywalls, zero full
 
 ## Tech Stack
 
-- **Framework**: [Next.js 16](https://nextjs.org/) (App Router, Turbopack, React 19, Server Components)
+- **Framework**: [Next.js 16](https://nextjs.org/) (App Router, React 19, Server Components)
 - **Database & Auth**: [Supabase](https://supabase.com/) (PostgreSQL, Row Level Security, `@supabase/ssr`)
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **Animations**: [Motion](https://motion.dev/)

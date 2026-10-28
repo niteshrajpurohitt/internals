@@ -66,6 +66,16 @@
 }
 
 /* ─── Base ───────────────────────────────────────────────────────────────── */
+html {
+  background-color: #080808;
+  color-scheme: dark;
+}
+
+html[data-theme="light"] {
+  background-color: #f4f3ef;
+  color-scheme: light;
+}
+
 body {
   min-height: 100vh;
 }

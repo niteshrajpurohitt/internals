@@ -65,7 +65,12 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
     >
       <head>
-        {/* Anti-FOUC: apply stored theme before first paint */}
+        {/* Anti-FOUC: apply stored theme and default canvas color before first paint */}
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `html{background-color:#080808;color-scheme:dark;}html[data-theme="light"]{background-color:#f4f3ef;color-scheme:light;}`,
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var t=localStorage.getItem('internals-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`,

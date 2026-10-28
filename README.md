@@ -13,7 +13,7 @@ Most company blogs are buried beneath marketing announcements, product releases,
 
 **Internals** aggregates and filters technical writing directly from world-class engineering teams (Cloudflare, OpenAI, Stripe, Uber, Netflix, Figma, Datadog, and 40+ more). 
 
-Every post links directly to the original publisher — zero paywalls, zero full-text scraping, zero algorithmic bias.
+Every post links directly to the original publisher — zero paywalls, zero full-text scraping.
 
 ---
 

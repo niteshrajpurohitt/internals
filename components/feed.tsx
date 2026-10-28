@@ -49,7 +49,13 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const [retryTrigger, setRetryTrigger] = useState(0);
   const [currentTotalCount, setCurrentTotalCount] = useState<number | undefined>(totalCount);
 
+  const isInitialMount = useRef(true);
+
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     setPosts(initialPosts);
     setCurrentTotalCount(totalCount);
     if (totalCount) setHasMore(initialPosts.length < totalCount);

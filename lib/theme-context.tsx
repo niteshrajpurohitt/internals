@@ -15,19 +15,24 @@ const ThemeContext = createContext<ThemeContextValue>({
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
-
-  // On mount, read persisted preference or system preference
-  useEffect(() => {
-    const stored = localStorage.getItem("internals-theme") as Theme | null;
-    if (stored === "light" || stored === "dark") {
-      setTheme(stored);
-      document.documentElement.setAttribute("data-theme", stored);
-    } else {
-      // Default to dark
-      document.documentElement.setAttribute("data-theme", "dark");
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("internals-theme") as Theme | null;
+        if (stored === "light" || stored === "dark") {
+          return stored;
+        }
+      } catch {
+        // localStorage not accessible
+      }
     }
-  }, []);
+    return "dark";
+  });
+
+  // Sync data-theme attribute whenever theme changes
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+  }, [theme]);
 
   const toggleTheme = () => {
     setTheme((prev) => {

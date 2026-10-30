@@ -110,7 +110,7 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
         setTimeout(() => reject(new Error("Connection timed out")), 5000)
       );
 
-      const result = (await Promise.race([networkPromise, timeoutPromise])) as any;
+      const result = (await Promise.race([networkPromise, timeoutPromise])) as { error?: Error | null } | null;
       if (result?.error) throw result.error;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Network error";

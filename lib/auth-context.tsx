@@ -24,8 +24,28 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      try {
+        return Boolean(new URLSearchParams(window.location.search).get("auth_error"));
+      } catch {
+        return false;
+      }
+    }
+    return false;
+  });
+  const [authError, setAuthError] = useState<string | null>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        if (new URLSearchParams(window.location.search).get("auth_error")) {
+          return "Authentication was interrupted or failed. Please try again.";
+        }
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  });
   const [signedOutToast, setSignedOutToast] = useState(false);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -47,13 +67,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const supabase = useMemo(() => createBrowserClientInstance(), []);
 
-  // Detect OAuth callback errors from URL (e.g., ?auth_error=true)
+  // Clean up ?auth_error param from address bar after initial load
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       if (params.get("auth_error")) {
-        setAuthError("Authentication was interrupted or failed. Please try again.");
-        setIsLoginModalOpen(true);
         params.delete("auth_error");
         const cleanUrl =
           window.location.pathname + (params.toString() ? `?${params.toString()}` : "");

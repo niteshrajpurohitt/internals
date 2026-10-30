@@ -47,19 +47,13 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const [filterError, setFilterError] = useState<string | null>(null);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [retryTrigger, setRetryTrigger] = useState(0);
-  const [currentTotalCount, setCurrentTotalCount] = useState<number | undefined>(totalCount);
 
-  const isInitialMount = useRef(true);
-
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
+  const [prevInitialPosts, setPrevInitialPosts] = useState(initialPosts);
+  if (initialPosts !== prevInitialPosts) {
+    setPrevInitialPosts(initialPosts);
     setPosts(initialPosts);
-    setCurrentTotalCount(totalCount);
     if (totalCount) setHasMore(initialPosts.length < totalCount);
-  }, [initialPosts, totalCount]);
+  }
 
   const buildQueryUrl = (offset: number, limit: number) => {
     const params = new URLSearchParams();
@@ -72,24 +66,23 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     return `/api/posts?${params.toString()}`;
   };
 
-  useEffect(() => {
-    if (selectedCategory === "Saved" && user) {
-      setPosts((prev) => prev.filter((p) => bookmarkedPostIds.has(p.id)));
-      setCurrentTotalCount(bookmarkedPostIds.size);
+  const displayedPosts = useMemo(() => {
+    if (selectedCategory === "Saved") {
+      if (!user) return [];
+      return posts.filter((p) => bookmarkedPostIds.has(p.id));
     }
-  }, [bookmarkedPostIds, selectedCategory, user]);
+    return posts;
+  }, [selectedCategory, user, posts, bookmarkedPostIds]);
 
   useEffect(() => {
     if (selectedCategory === "Saved") {
-      if (!user) {
-        setIsFiltering(false);
-        setPosts([]);
-        setCurrentTotalCount(0);
-        setHasMore(false);
-        return;
-      }
-      setIsFiltering(true);
+      if (!user) return;
+      let active = true;
+      queueMicrotask(() => {
+        if (active) setIsFiltering(true);
+      });
       fetchSavedPosts().then((saved) => {
+        if (!active) return;
         let filtered = saved;
         if (selectedCompanyId !== "all") {
           filtered = filtered.filter(
@@ -113,11 +106,12 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
           );
         }
         setPosts(filtered);
-        setCurrentTotalCount(filtered.length);
         setHasMore(false);
         setIsFiltering(false);
       });
-      return;
+      return () => {
+        active = false;
+      };
     }
 
     const isDefault =
@@ -128,17 +122,26 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
 
     if (isDefault) {
       if (posts !== initialPosts) {
-        setPosts(initialPosts);
-        setCurrentTotalCount(totalCount);
-        setHasMore(totalCount ? initialPosts.length < totalCount : true);
+        queueMicrotask(() => {
+          setPosts(initialPosts);
+          setHasMore(totalCount ? initialPosts.length < totalCount : true);
+          setIsFiltering(false);
+        });
+      } else {
+        queueMicrotask(() => {
+          setIsFiltering(false);
+        });
       }
-      setIsFiltering(false);
       return;
     }
 
     const abortController = new AbortController();
-    setIsFiltering(true);
-    setFilterError(null);
+    queueMicrotask(() => {
+      if (!abortController.signal.aborted) {
+        setIsFiltering(true);
+        setFilterError(null);
+      }
+    });
     const timer = setTimeout(async () => {
       try {
         const url = buildQueryUrl(0, 20);
@@ -149,7 +152,6 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
         }
         const data = await res.json();
         setPosts(data.posts || []);
-        setCurrentTotalCount(data.totalCount);
         setHasMore(data.hasMore);
       } catch (err: unknown) {
         if (err instanceof Error && err.name === "AbortError") return;
@@ -184,7 +186,6 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
           return isGeneral ? interleavePostsByCompany(combined, 2) : combined;
         });
         setHasMore(data.hasMore);
-        if (data.totalCount !== undefined) setCurrentTotalCount(data.totalCount);
       } else {
         setHasMore(false);
       }
@@ -485,16 +486,11 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
             isFiltering ? "opacity-40 pointer-events-none" : "opacity-100"
           }`}
         >
-          {posts.length > 0 ? (
-            posts.map((post, idx) => (
+          {displayedPosts.length > 0 ? (
+            displayedPosts.map((post) => (
               <PostCard
                 key={post.id}
                 post={post}
-                index={idx}
-                onSelectCategory={(cat) => {
-                  setSelectedCategory(cat);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
               />
             ))
           ) : filterError ? (
@@ -532,7 +528,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
       </div>
 
       {/* Show More — only displayed when articles are loaded and not in an error state */}
-      {hasMore && posts.length > 0 && !filterError && (
+      {hasMore && displayedPosts.length > 0 && !filterError && (
         <div className="flex flex-col items-center justify-center pb-2 pt-8">
           <button
             type="button"

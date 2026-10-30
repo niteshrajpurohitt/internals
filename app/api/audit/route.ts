@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
 import { getServiceSupabase } from "@/lib/supabase";
+import { isTimingSafeMatch } from "@/lib/server-utils";
 
 export const dynamic = "force-dynamic";
-
-function isTimingSafeMatch(a: string, b: string): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  if (bufA.length !== bufB.length) return false;
-  return crypto.timingSafeEqual(bufA, bufB);
-}
 
 export async function GET(req: NextRequest) {
   const syncSecret = process.env.SYNC_SECRET;
@@ -78,12 +71,12 @@ export async function GET(req: NextRequest) {
   const analysis = {
     totalInDb: totalPosts,
     sampleSizeAnalyzed: posts.length,
-    emptyOrNoContent: [] as any[],
-    releaseTagPosts: [] as any[],
-    boilerplateSummaries: [] as any[],
-    marketingOrPrPatterns: [] as any[],
-    policyOrLaborPatterns: [] as any[],
-    taggedOnlyArchitectureEngineering: [] as any[],
+    emptyOrNoContent: [] as Array<Record<string, unknown>>,
+    releaseTagPosts: [] as Array<Record<string, unknown>>,
+    boilerplateSummaries: [] as Array<Record<string, unknown>>,
+    marketingOrPrPatterns: [] as Array<Record<string, unknown>>,
+    policyOrLaborPatterns: [] as Array<Record<string, unknown>>,
+    taggedOnlyArchitectureEngineering: [] as Array<Record<string, unknown>>,
     tagDistribution: {} as Record<string, number>,
     companyDistribution: {} as Record<string, number>,
   };
@@ -91,7 +84,7 @@ export async function GET(req: NextRequest) {
   
 
   for (const p of posts) {
-    const compName = (p.companies as any)?.name || "Unknown";
+    const compName = (p.companies as { name?: string } | null)?.name || "Unknown";
     analysis.companyDistribution[compName] = (analysis.companyDistribution[compName] || 0) + 1;
 
     for (const tag of p.tags || []) {

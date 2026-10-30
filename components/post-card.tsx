@@ -3,80 +3,11 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { ArrowUpRight, Bookmark } from "lucide-react";
-import { PostWithCompany, CategoryFilter } from "@/lib/types";
+import { PostWithCompany } from "@/lib/types";
 import { useBookmarks } from "@/lib/bookmark-context";
 
 interface PostCardProps {
   post: PostWithCompany;
-  index: number;
-  onSelectCategory?: (category: CategoryFilter) => void;
-}
-
-export const CANONICAL_SECTIONS: CategoryFilter[] = [
-  "AI & Machine Learning",
-  "Distributed Systems",
-  "Databases & Storage",
-  "Infrastructure & Cloud",
-  "Low-Level & Compilers",
-  "Web & Platforms",
-];
-
-export function resolveCanonicalSection(tags: string[] = []): CategoryFilter {
-  for (const tag of tags) {
-    const matched = CANONICAL_SECTIONS.find(
-      (s) => s.toLowerCase() === tag.toLowerCase()
-    );
-    if (matched) return matched;
-  }
-
-  for (const tag of tags) {
-    const lower = tag.toLowerCase();
-    if (
-      ["gpu", "llm", "ai / systems", "machine learning", "deep learning", "inference", "triton", "cuda", "transformer"].some((k) =>
-        lower.includes(k)
-      )
-    ) return "AI & Machine Learning";
-
-    if (
-      ["distributed", "consensus", "raft", "kafka", "paxos", "microservice", "event stream"].some((k) =>
-        lower.includes(k)
-      )
-    ) return "Distributed Systems";
-
-    if (
-      ["database", "storage", "clickhouse", "postgresql", "scylladb", "cassandra", "cockroachdb", "duckdb", "sqlite", "redis"].some((k) =>
-        lower.includes(k)
-      )
-    ) return "Databases & Storage";
-
-    if (
-      ["infra", "cloud", "kubernetes", "networking", "linux kernel", "edge", "anycast", "docker"].some((k) =>
-        lower.includes(k)
-      )
-    ) return "Infrastructure & Cloud";
-
-    if (
-      ["rust", "zig", "c++", "compiler", "systems programming", "ebpf", "wasm", "assembly", "golang"].some((k) =>
-        lower.includes(k)
-      )
-    ) return "Low-Level & Compilers";
-
-    if (
-      ["web", "frontend", "platform", "crdt", "react", "vite", "turbopack", "browser"].some((k) =>
-        lower.includes(k)
-      )
-    ) return "Web & Platforms";
-  }
-
-  if (tags.some((t) => t.toLowerCase() === "postmortems" || t.toLowerCase() === "postmortem")) {
-    return "Postmortems";
-  }
-
-  if (tags.some((t) => t.toLowerCase() === "classics")) {
-    return "Classics";
-  }
-
-  return "Web & Platforms";
 }
 
 function getRelativeTime(dateString: string): string {
@@ -100,7 +31,7 @@ function getRelativeTime(dateString: string): string {
   }
 }
 
-export function PostCard({ post, index, onSelectCategory }: PostCardProps) {
+export function PostCard({ post }: PostCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const isSaved = isBookmarked(post.id);

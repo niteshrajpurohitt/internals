@@ -1,18 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
 import { getServiceSupabase } from "@/lib/supabase";
+import { isTimingSafeMatch } from "@/lib/server-utils";
 import { fetchAndParseFeed, detectCategories, isMarketingFluff, decodeHtmlEntities, cleanTitle } from "@/lib/rss";
 import { LANDMARK_POSTMORTEMS, LANDMARK_CLASSICS } from "@/lib/classics";
 
 export const maxDuration = 60; // Allow up to 60s for full feed sync
 export const dynamic = "force-dynamic";
-
-function isTimingSafeMatch(a: string, b: string): boolean {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  if (bufA.length !== bufB.length) return false;
-  return crypto.timingSafeEqual(bufA, bufB);
-}
 
 export async function GET(req: NextRequest) {
   return handleSync(req);

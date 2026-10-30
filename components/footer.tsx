@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { ExternalLink } from "lucide-react";
 import { Container } from "@/components/container";
-import { Logo } from "@/components/logo";
 import TechText from "@/components/tech-text";
 
 export function Footer() {

@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState } from "react";
 
 interface SearchContextType {
   searchQuery: string;
@@ -13,14 +13,16 @@ const SearchContext = createContext<SearchContextType>({
 });
 
 export function SearchProvider({ children }: { children: React.ReactNode }) {
-  const [searchQuery, setSearchQuery] = useState("");
-
-  useEffect(() => {
+  const [searchQuery, setSearchQuery] = useState(() => {
     if (typeof window !== "undefined") {
-      const q = new URLSearchParams(window.location.search).get("q");
-      if (q) setSearchQuery(q);
+      try {
+        return new URLSearchParams(window.location.search).get("q") || "";
+      } catch {
+        return "";
+      }
     }
-  }, []);
+    return "";
+  });
 
   const updateSearchQuery = (query: string) => {
     setSearchQuery(query);

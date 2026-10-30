@@ -15,11 +15,6 @@ export function LoginModal() {
   } = useAuth();
   const [loadingProvider, setLoadingProvider] = useState<"github" | "google" | null>(null);
 
-  // Reset loading state when modal opens or closes
-  useEffect(() => {
-    setLoadingProvider(null);
-  }, [isLoginModalOpen]);
-
   // Handle browser Back/Forward navigation cache (bfcache)
   useEffect(() => {
     const handlePageShow = () => {

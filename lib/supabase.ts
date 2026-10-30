@@ -2,8 +2,6 @@ import { createClient } from "@supabase/supabase-js";
 import { Company, PostWithCompany } from "./types";
 import { interleavePostsByCompany } from "./feed-utils";
 
-export { interleavePostsByCompany };
-
 function cleanSupabaseUrl(url?: string): string | null {
   if (!url) return null;
   let cleaned = url
@@ -96,7 +94,17 @@ export async function getCompanies(options?: { minPosts?: number }): Promise<Com
       return [];
     }
 
-    const formatted: Company[] = data.map((c: any) => ({
+    interface CompanyRow {
+      id: string;
+      name: string;
+      slug: string;
+      website_url: string;
+      feed_url: string | null;
+      created_at: string;
+      posts?: Array<{ count: number }>;
+    }
+
+    const formatted: Company[] = (data as unknown as CompanyRow[]).map((c) => ({
       id: c.id,
       name: c.name,
       slug: c.slug,
@@ -139,24 +147,8 @@ export function getDurationReadTimes(duration?: string): string[] {
         "9 min read",
         "10 min read",
       ];
-    case "long": // 10+ min
-      return [
-        "11 min read",
-        "12 min read",
-        "13 min read",
-        "14 min read",
-        "15 min read",
-        "16 min read",
-        "17 min read",
-        "18 min read",
-        "19 min read",
-        "20 min read",
-        "21 min read",
-        "22 min read",
-        "23 min read",
-        "24 min read",
-        "25 min read",
-      ];
+    case "long": // 10+ min (covers comprehensive architecture analyses and postmortems)
+      return Array.from({ length: 110 }, (_, i) => `${i + 11} min read`);
     default:
       return [];
   }
@@ -334,6 +326,7 @@ export function applySearchFilter<T>(
     return query;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let currentQuery = query as any;
 
   for (const token of tokens) {

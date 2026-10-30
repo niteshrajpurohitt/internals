@@ -382,43 +382,52 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
                 />
               </button>
 
-              {companyDropdownOpen && (
-                <div className="absolute left-0 top-full z-50 mt-1 max-h-64 min-w-[200px] overflow-y-auto border border-neutral-950/25 bg-white py-1 shadow-lg font-mono text-xs uppercase dark:border-white/25 dark:bg-[#111111]">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedCompanyId("all");
-                      setCompanyDropdownOpen(false);
-                    }}
-                    className={`flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left font-bold transition-colors ${
-                      selectedCompanyId === "all"
-                        ? "bg-neutral-950 text-white dark:bg-white dark:text-black"
-                        : "text-neutral-950/80 hover:bg-neutral-950/5 dark:text-white/80 dark:hover:bg-white/5"
-                    }`}
+              <AnimatePresence>
+                {companyDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.96, y: -4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.96, y: -4 }}
+                    style={{ transformOrigin: "top left" }}
+                    transition={{ duration: 0.12, ease: "easeOut" }}
+                    className="absolute left-0 top-full z-50 mt-1 max-h-64 min-w-[200px] overflow-y-auto border border-neutral-950/25 bg-white py-1 shadow-lg font-mono text-xs uppercase dark:border-white/25 dark:bg-[#111111]"
                   >
-                    <span>ALL</span>
-                    {selectedCompanyId === "all" && <span className="text-[10px]">●</span>}
-                  </button>
-                  {eligibleCompanies.map((c) => (
                     <button
-                      key={c.id}
                       type="button"
                       onClick={() => {
-                        setSelectedCompanyId(c.id);
+                        setSelectedCompanyId("all");
                         setCompanyDropdownOpen(false);
                       }}
                       className={`flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left font-bold transition-colors ${
-                        selectedCompanyId === c.id
+                        selectedCompanyId === "all"
                           ? "bg-neutral-950 text-white dark:bg-white dark:text-black"
                           : "text-neutral-950/80 hover:bg-neutral-950/5 dark:text-white/80 dark:hover:bg-white/5"
                       }`}
                     >
-                      <span className="truncate pr-2">{c.name.toUpperCase()}</span>
-                      {selectedCompanyId === c.id && <span className="shrink-0 text-[10px]">●</span>}
+                      <span>ALL</span>
+                      {selectedCompanyId === "all" && <span className="text-[10px]">●</span>}
                     </button>
-                  ))}
-                </div>
-              )}
+                    {eligibleCompanies.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedCompanyId(c.id);
+                          setCompanyDropdownOpen(false);
+                        }}
+                        className={`flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left font-bold transition-colors ${
+                          selectedCompanyId === c.id
+                            ? "bg-neutral-950 text-white dark:bg-white dark:text-black"
+                            : "text-neutral-950/80 hover:bg-neutral-950/5 dark:text-white/80 dark:hover:bg-white/5"
+                        }`}
+                      >
+                        <span className="truncate pr-2">{c.name.toUpperCase()}</span>
+                        {selectedCompanyId === c.id && <span className="shrink-0 text-[10px]">●</span>}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
@@ -444,28 +453,37 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
                 />
               </button>
 
-              {durationDropdownOpen && (
-                <div className="absolute left-0 top-full z-50 mt-1 min-w-[130px] border border-neutral-950/25 bg-white py-1 shadow-lg font-mono text-xs uppercase dark:border-white/25 dark:bg-[#111111]">
-                  {DURATION_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => {
-                        setSelectedDuration(opt.value);
-                        setDurationDropdownOpen(false);
-                      }}
-                      className={`flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left font-bold transition-colors ${
-                        selectedDuration === opt.value
-                          ? "bg-neutral-950 text-white dark:bg-white dark:text-black"
-                          : "text-neutral-950/80 hover:bg-neutral-950/5 dark:text-white/80 dark:hover:bg-white/5"
-                      }`}
-                    >
-                      <span>{opt.label}</span>
-                      {selectedDuration === opt.value && <span className="text-[10px]">●</span>}
-                    </button>
-                  ))}
-                </div>
-              )}
+              <AnimatePresence>
+                {durationDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.96, y: -4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.96, y: -4 }}
+                    style={{ transformOrigin: "top left" }}
+                    transition={{ duration: 0.12, ease: "easeOut" }}
+                    className="absolute left-0 top-full z-50 mt-1 min-w-[130px] border border-neutral-950/25 bg-white py-1 shadow-lg font-mono text-xs uppercase dark:border-white/25 dark:bg-[#111111]"
+                  >
+                    {DURATION_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setSelectedDuration(opt.value);
+                          setDurationDropdownOpen(false);
+                        }}
+                        className={`flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left font-bold transition-colors ${
+                          selectedDuration === opt.value
+                            ? "bg-neutral-950 text-white dark:bg-white dark:text-black"
+                            : "text-neutral-950/80 hover:bg-neutral-950/5 dark:text-white/80 dark:hover:bg-white/5"
+                        }`}
+                      >
+                        <span>{opt.label}</span>
+                        {selectedDuration === opt.value && <span className="text-[10px]">●</span>}
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 

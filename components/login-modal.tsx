@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { useAuth } from "@/lib/auth-context";
 import { Logo } from "@/components/logo";
 
@@ -77,16 +78,26 @@ export function LoginModal() {
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f3ef]/80 p-4 backdrop-blur-sm animate-in fade-in duration-150 dark:bg-[#080808]/85"
-      onClick={handleClose}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="cad-crosshair relative w-full max-w-sm border border-neutral-950/25 bg-white px-5 pb-5 pt-2.5 sm:px-6 sm:pb-6 sm:pt-3 shadow-2xl dark:border-white/25 dark:bg-[#111111]"
-      >
+    <AnimatePresence>
+      {isLoginModalOpen && (
+        <motion.div
+          role="dialog"
+          aria-modal="true"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#f4f3ef]/80 p-4 backdrop-blur-sm dark:bg-[#080808]/85"
+          onClick={handleClose}
+        >
+          <motion.div
+            onClick={(e) => e.stopPropagation()}
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 6 }}
+            transition={{ type: "spring", stiffness: 420, damping: 28 }}
+            className="cad-crosshair relative w-full max-w-sm border border-neutral-950/25 bg-white px-5 pb-5 pt-2.5 sm:px-6 sm:pb-6 sm:pt-3 shadow-2xl dark:border-white/25 dark:bg-[#111111]"
+          >
         {/* Top Header: Close Button */}
         <div className="mb-2 flex justify-end">
           <button
@@ -125,10 +136,11 @@ export function LoginModal() {
         {/* Middle: Buttons */}
         <div className="mt-3 flex flex-col gap-2.5 font-mono text-xs">
           {/* GitHub */}
-          <button
+          <motion.button
+            whileTap={{ scale: 0.98 }}
             onClick={handleGithub}
             disabled={loadingProvider !== null}
-            className="flex h-10 w-full cursor-pointer items-center justify-center gap-2.5 border border-neutral-950/25 bg-neutral-950 font-semibold text-white shadow-xs transition-all hover:bg-neutral-800 disabled:opacity-50 dark:border-white/25 dark:bg-white dark:text-black dark:hover:bg-neutral-100"
+            className="flex h-10 w-full cursor-pointer items-center justify-center gap-2.5 border border-neutral-950/25 bg-neutral-950 font-semibold text-white shadow-xs transition-colors hover:bg-neutral-800 disabled:opacity-50 dark:border-white/25 dark:bg-white dark:text-black dark:hover:bg-neutral-100"
           >
             <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24">
               <path
@@ -138,13 +150,14 @@ export function LoginModal() {
               />
             </svg>
             <span>{loadingProvider === "github" ? "Connecting..." : "Continue with GitHub"}</span>
-          </button>
+          </motion.button>
 
           {/* Google */}
-          <button
+          <motion.button
+            whileTap={{ scale: 0.98 }}
             onClick={handleGoogle}
             disabled={loadingProvider !== null}
-            className="flex h-10 w-full cursor-pointer items-center justify-center gap-2.5 border border-neutral-950/20 bg-white font-medium text-neutral-950 transition-all hover:bg-neutral-50 disabled:opacity-50 dark:border-white/20 dark:bg-neutral-900 dark:text-white dark:hover:bg-neutral-800"
+            className="flex h-10 w-full cursor-pointer items-center justify-center gap-2.5 border border-neutral-950/20 bg-white font-medium text-neutral-950 transition-colors hover:bg-neutral-50 disabled:opacity-50 dark:border-white/20 dark:bg-neutral-900 dark:text-white dark:hover:bg-neutral-800"
           >
             <svg className="h-4 w-4" viewBox="0 0 24 24">
               <path
@@ -165,14 +178,16 @@ export function LoginModal() {
               />
             </svg>
             <span>{loadingProvider === "google" ? "Connecting..." : "Continue with Google"}</span>
-          </button>
+          </motion.button>
         </div>
 
         {/* Bottom: Other text */}
         <p className="mt-4 text-center font-mono text-[11px] leading-relaxed text-neutral-950/60 dark:text-white/60">
           Save bookmarks across devices. No spam. Zero paywalls.
         </p>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+      )}
+    </AnimatePresence>
   );
 }

@@ -83,8 +83,10 @@ export function PostCard({ post }: PostCardProps) {
 
           <div className="flex items-center gap-2 pr-1 pt-1">
             {/* Bookmark button */}
-            <button
+            <motion.button
               type="button"
+              whileTap={{ scale: 0.86 }}
+              transition={{ type: "spring", stiffness: 500, damping: 25 }}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -92,14 +94,14 @@ export function PostCard({ post }: PostCardProps) {
               }}
               title={isSaved ? "Remove from saved" : "Save article"}
               aria-label={isSaved ? "Remove from saved" : "Save article"}
-              className={`relative z-10 flex h-5 w-5 cursor-pointer items-center justify-center border transition-all ${
+              className={`relative z-10 flex h-5 w-5 cursor-pointer items-center justify-center border transition-colors ${
                 isSaved
                   ? "border-neutral-950 bg-neutral-950 text-white dark:border-white dark:bg-white dark:text-black"
                   : "border-neutral-950/25 bg-white text-neutral-950/50 hover:border-neutral-950 hover:text-neutral-950 dark:border-white/25 dark:bg-[#080808] dark:text-white/50 dark:hover:border-white dark:hover:text-white"
               }`}
             >
               <Bookmark className={`h-2.5 w-2.5 ${isSaved ? "fill-current" : ""}`} />
-            </button>
+            </motion.button>
 
             {/* Launch tile */}
             <div className="relative h-5 w-5">

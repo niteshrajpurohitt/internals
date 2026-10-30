@@ -105,15 +105,16 @@ export function Header() {
           </form>
 
           {/* Theme Toggle */}
-          <button
+          <motion.button
             type="button"
             onClick={toggleTheme}
+            whileTap={{ scale: 0.90 }}
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             title={theme === "dark" ? "Light mode" : "Dark mode"}
-            className="flex h-7 w-7 cursor-pointer items-center justify-center border border-neutral-950/20 bg-white text-neutral-950/60 transition-all hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-black dark:text-white/60 dark:hover:border-white/50 dark:hover:text-white"
+            className="flex h-7 w-7 cursor-pointer items-center justify-center border border-neutral-950/20 bg-white text-neutral-950/60 transition-colors hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-black dark:text-white/60 dark:hover:border-white/50 dark:hover:text-white"
           >
             {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
-          </button>
+          </motion.button>
 
           {/* Auth: Direct Sign In / Sign Out */}
           {user ? (

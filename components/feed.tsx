@@ -33,7 +33,7 @@ const CATEGORIES: CategoryFilter[] = [
 export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const { searchQuery, setSearchQuery } = useSearch();
   const { user, openLoginModal } = useAuth();
-  const { bookmarkCount, fetchSavedPosts, bookmarkedPostIds, bookmarkError } = useBookmarks();
+  const { bookmarkCount, fetchSavedPosts, bookmarkedPostIds } = useBookmarks();
 
   const [posts, setPosts] = useState<PostWithCompany[]>(initialPosts);
   const [hasMore, setHasMore] = useState(
@@ -573,22 +573,6 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
           )}
         </div>
       )}
-
-      {/* Floating Bookmark Feedback Toast with Sleek Slide-Up Animation */}
-      <AnimatePresence>
-        {bookmarkError && (
-          <motion.div
-            role="alert"
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 8 }}
-            transition={{ duration: 0.18, ease: "easeOut" }}
-            className="fixed bottom-6 right-6 z-50 flex items-center border border-red-500/40 bg-white px-4 py-2.5 font-mono text-xs text-neutral-950 shadow-2xl dark:border-red-400/40 dark:bg-[#111111] dark:text-white"
-          >
-            <span>{bookmarkError}</span>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
 import { useAuth } from "./auth-context";
+import { useToast } from "./toast-context";
 import { createBrowserClientInstance } from "./supabase-browser";
 import { PostWithCompany } from "./types";
 
@@ -19,6 +20,7 @@ const BookmarkContext = createContext<BookmarkContextType | undefined>(undefined
 
 export function BookmarkProvider({ children }: { children: React.ReactNode }) {
   const { user, openLoginModal } = useAuth();
+  const { showToast } = useToast();
   const [bookmarkedPostIds, setBookmarkedPostIds] = useState<Set<string>>(new Set());
   const [isLoadingBookmarks, setIsLoadingBookmarks] = useState(false);
   const [bookmarkError, setBookmarkError] = useState<string | null>(null);
@@ -78,6 +80,7 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
     // Immediate offline check: prevent false optimistic state
     if (typeof navigator !== "undefined" && !navigator.onLine) {
       setBookmarkError("You are offline. Cannot save bookmarks.");
+      showToast("You are offline. Cannot save bookmarks.", "error");
       setTimeout(() => setBookmarkError(null), 4000);
       return;
     }
@@ -116,6 +119,7 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
       const msg = err instanceof Error ? err.message : "Network error";
       console.warn("[Bookmarks] Toggle failed, reverting state:", msg);
       setBookmarkError("Could not update bookmark. Please verify connection.");
+      showToast("Could not update bookmark. Please verify connection.", "error");
       setTimeout(() => setBookmarkError(null), 4000);
 
       // Revert optimistic update

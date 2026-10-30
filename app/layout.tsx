@@ -6,8 +6,9 @@ import { SearchProvider } from "@/lib/search-context";
 import { AuthProvider } from "@/lib/auth-context";
 import { BookmarkProvider } from "@/lib/bookmark-context";
 import { ThemeProvider } from "@/lib/theme-context";
+import { ToastProvider } from "@/lib/toast-context";
 import { LoginModal } from "@/components/login-modal";
-import { AuthToast } from "@/components/auth-toast";
+import { ToastContainer } from "@/components/toast-container";
 import { Analytics } from "@vercel/analytics/next";
 
 const spaceGrotesk = Space_Grotesk({
@@ -90,16 +91,18 @@ export default function RootLayout({
         {/* Masked CAD Drafting Grid Layer */}
         <div className="cad-grid-layer pointer-events-none fixed inset-0 z-0" aria-hidden="true" />
         <ThemeProvider>
-          <AuthProvider>
-            <BookmarkProvider>
-              <SearchProvider>
-                <Header />
-                <div className="relative z-10 flex flex-1 flex-col">{children}</div>
-                <LoginModal />
-                <AuthToast />
-              </SearchProvider>
-            </BookmarkProvider>
-          </AuthProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <BookmarkProvider>
+                <SearchProvider>
+                  <Header />
+                  <div className="relative z-10 flex flex-1 flex-col">{children}</div>
+                  <LoginModal />
+                  <ToastContainer />
+                </SearchProvider>
+              </BookmarkProvider>
+            </AuthProvider>
+          </ToastProvider>
         </ThemeProvider>
         <Analytics />
       </body>

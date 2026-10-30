@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
+import React, { createContext, useContext, useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { User, AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { createBrowserClientInstance } from "./supabase-browser";
 
@@ -15,6 +15,8 @@ interface AuthContextType {
   signInWithGithub: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
+  signedOutToast: boolean;
+  dismissSignedOutToast: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,6 +26,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [signedOutToast, setSignedOutToast] = useState(false);
+  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const dismissSignedOutToast = useCallback(() => {
+    setSignedOutToast(false);
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) {
+        clearTimeout(toastTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const supabase = useMemo(() => createBrowserClientInstance(), []);
 
@@ -113,12 +133,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    // Provide instant responsive UI feedback
+    setUser(null);
+    setSignedOutToast(true);
+
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = setTimeout(() => {
+      setSignedOutToast(false);
+      toastTimeoutRef.current = null;
+    }, 3500);
+
     try {
       await supabase.auth.signOut();
     } catch (err) {
       console.warn("[Auth] Sign out warning:", err);
-    } finally {
-      setUser(null);
     }
   };
 
@@ -144,6 +174,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signInWithGithub,
         signInWithGoogle,
         signOut,
+        signedOutToast,
+        dismissSignedOutToast,
       }}
     >
       {children}

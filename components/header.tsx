@@ -54,21 +54,32 @@ export function Header() {
         <div className="flex items-center gap-2.5 sm:gap-3">
 
           {/* Search */}
-          <div className="group relative flex h-7 w-28 items-center border border-neutral-950/20 bg-white font-mono text-[11px] transition-colors focus-within:border-neutral-950/50 sm:w-36 dark:border-white/20 dark:bg-[#111111] dark:focus-within:border-white/55">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              inputRef.current?.blur();
+            }}
+            action=""
+            className="group relative flex h-7 w-28 items-center border border-neutral-950/20 bg-white font-mono text-[11px] transition-colors focus-within:border-neutral-950/50 sm:w-36 dark:border-white/20 dark:bg-[#111111] dark:focus-within:border-white/55"
+          >
             <Search className="pointer-events-none ml-2 h-3 w-3 shrink-0 text-neutral-950/40 transition-colors group-focus-within:text-neutral-950/70 dark:text-white/40 dark:group-focus-within:text-white/80" />
             <input
               ref={inputRef}
-              type="text"
+              type="search"
+              enterKeyHint="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  inputRef.current?.blur();
+                }
                 if (e.key === "Escape") {
                   setSearchQuery("");
                   inputRef.current?.blur();
                 }
               }}
               placeholder="SEARCH..."
-              className="h-full w-full bg-transparent px-1.5 text-[11px] text-neutral-950 placeholder:text-neutral-950/35 focus:outline-none dark:text-white dark:placeholder:text-white/40"
+              className="h-full w-full bg-transparent px-1.5 text-[11px] text-neutral-950 placeholder:text-neutral-950/35 focus:outline-none dark:text-white dark:placeholder:text-white/40 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden"
             />
             {searchQuery && (
               <button
@@ -80,7 +91,7 @@ export function Header() {
                 <X className="h-3 w-3" />
               </button>
             )}
-          </div>
+          </form>
 
           {/* Theme Toggle */}
           <button

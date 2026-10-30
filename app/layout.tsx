@@ -7,6 +7,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { BookmarkProvider } from "@/lib/bookmark-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import { LoginModal } from "@/components/login-modal";
+import { AuthToast } from "@/components/auth-toast";
 import { Analytics } from "@vercel/analytics/next";
 
 const spaceGrotesk = Space_Grotesk({
@@ -95,6 +96,7 @@ export default function RootLayout({
                 <Header />
                 <div className="relative z-10 flex flex-1 flex-col">{children}</div>
                 <LoginModal />
+                <AuthToast />
               </SearchProvider>
             </BookmarkProvider>
           </AuthProvider>

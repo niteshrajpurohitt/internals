@@ -2,6 +2,7 @@
 
 import { useRef, useEffect } from "react";
 import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { Search, X, User as UserIcon, LogOut, Sun, Moon } from "lucide-react";
 import { useSearch } from "@/lib/search-context";
@@ -14,6 +15,8 @@ export function Header() {
   const { searchQuery, setSearchQuery } = useSearch();
   const { user, openLoginModal, signOut } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const router = useRouter();
+  const pathname = usePathname();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -58,6 +61,10 @@ export function Header() {
             onSubmit={(e) => {
               e.preventDefault();
               inputRef.current?.blur();
+              if (pathname !== "/") {
+                const trimmed = searchQuery.trim();
+                router.push(trimmed ? `/?q=${encodeURIComponent(trimmed)}` : "/");
+              }
             }}
             action=""
             className="group relative flex h-7 w-28 items-center border border-neutral-950/20 bg-white font-mono text-[11px] transition-colors focus-within:border-neutral-950/50 sm:w-36 dark:border-white/20 dark:bg-[#111111] dark:focus-within:border-white/55"
@@ -72,6 +79,10 @@ export function Header() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   inputRef.current?.blur();
+                  if (pathname !== "/") {
+                    const trimmed = searchQuery.trim();
+                    router.push(trimmed ? `/?q=${encodeURIComponent(trimmed)}` : "/");
+                  }
                 }
                 if (e.key === "Escape") {
                   setSearchQuery("");

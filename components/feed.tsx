@@ -48,6 +48,8 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const [retryTrigger, setRetryTrigger] = useState(0);
 
+  const isFirstSearch = useRef(true);
+
   const [prevInitialPosts, setPrevInitialPosts] = useState(initialPosts);
   if (initialPosts !== prevInitialPosts) {
     setPrevInitialPosts(initialPosts);
@@ -100,10 +102,16 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
           });
         }
         if (searchQuery.trim()) {
-          const q = searchQuery.toLowerCase();
-          filtered = filtered.filter(
-            (p) => p.title.toLowerCase().includes(q) || p.summary.toLowerCase().includes(q)
-          );
+          const q = searchQuery.toLowerCase().trim();
+          filtered = filtered.filter((p) => {
+            const titleMatch = p.title.toLowerCase().includes(q);
+            const summaryMatch = p.summary.toLowerCase().includes(q);
+            const companyMatch =
+              (p.company?.name || p.companies?.name || "").toLowerCase().includes(q) ||
+              (p.company?.slug || p.companies?.slug || "").toLowerCase().includes(q);
+            const tagsMatch = (p.tags || []).some((t) => t.toLowerCase().includes(q));
+            return titleMatch || summaryMatch || companyMatch || tagsMatch;
+          });
         }
         setPosts(filtered);
         setHasMore(false);
@@ -142,6 +150,10 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
         setFilterError(null);
       }
     });
+
+    const debounceDelay = isFirstSearch.current ? 0 : (searchQuery ? 250 : 0);
+    isFirstSearch.current = false;
+
     const timer = setTimeout(async () => {
       try {
         const url = buildQueryUrl(0, 20);
@@ -160,7 +172,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
       } finally {
         if (!abortController.signal.aborted) setIsFiltering(false);
       }
-    }, searchQuery ? 250 : 0);
+    }, debounceDelay);
 
     return () => { clearTimeout(timer); abortController.abort(); };
   }, [selectedCategory, selectedCompanyId, selectedDuration, searchQuery, retryTrigger, initialPosts, totalCount, user, fetchSavedPosts]);

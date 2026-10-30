@@ -31,13 +31,33 @@ CREATE TABLE public.posts (
     tags TEXT[] NOT NULL DEFAULT '{}',
     read_time TEXT NOT NULL,
     published_at TIMESTAMPTZ NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now())
+    created_at TIMESTAMPTZ NOT NULL DEFAULT timezone('utc'::text, now()),
+    fts tsvector
 );
 
 -- 5. Indexes for fast aggregation and querying
 CREATE INDEX idx_posts_published_at ON public.posts(published_at DESC);
 CREATE INDEX idx_posts_company_id ON public.posts(company_id);
 CREATE INDEX idx_posts_tags ON public.posts USING GIN (tags);
+CREATE INDEX idx_posts_fts ON public.posts USING GIN (fts);
+
+-- FTS Auto-update Trigger
+CREATE OR REPLACE FUNCTION public.posts_fts_trigger()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.fts := 
+        setweight(to_tsvector('english', coalesce(NEW.title, '')), 'A') ||
+        setweight(to_tsvector('english', coalesce(array_to_string(NEW.tags, ' '), '')), 'B') ||
+        setweight(to_tsvector('english', coalesce(NEW.summary, '')), 'C');
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_posts_fts ON public.posts;
+CREATE TRIGGER trg_posts_fts
+    BEFORE INSERT OR UPDATE OF title, tags, summary ON public.posts
+    FOR EACH ROW
+    EXECUTE FUNCTION public.posts_fts_trigger();
 
 -- 6. Enable Row Level Security (RLS)
 ALTER TABLE public.companies ENABLE ROW LEVEL SECURITY;

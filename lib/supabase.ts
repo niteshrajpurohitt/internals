@@ -312,6 +312,42 @@ const COMMON_SEARCH_STOPWORDS = new Set([
   "in", "at", "to", "on", "by", "of", "for", "or", "an", "is", "the", "and", "how", "why", "we"
 ]);
 
+export function extractCompanyFromQuery(
+  searchQuery: string,
+  companies: Company[]
+): { company: Company | null; remainingQuery: string } {
+  const cleaned = searchQuery.trim().toLowerCase();
+  if (!cleaned || companies.length === 0) {
+    return { company: null, remainingQuery: searchQuery };
+  }
+
+  // Sort by longest name first to match multi-word companies accurately (e.g. "Google Research" before "Google")
+  const sorted = [...companies].sort((a, b) => b.name.length - a.name.length);
+
+  for (const comp of sorted) {
+    const name = comp.name.toLowerCase();
+    const slug = comp.slug.toLowerCase();
+
+    if (cleaned === name || cleaned === slug) {
+      return { company: comp, remainingQuery: "" };
+    }
+    if (cleaned.startsWith(name + " ")) {
+      return { company: comp, remainingQuery: cleaned.slice(name.length + 1).trim() };
+    }
+    if (cleaned.startsWith(slug + " ")) {
+      return { company: comp, remainingQuery: cleaned.slice(slug.length + 1).trim() };
+    }
+    if (cleaned.endsWith(" " + name)) {
+      return { company: comp, remainingQuery: cleaned.slice(0, cleaned.length - name.length - 1).trim() };
+    }
+    if (cleaned.endsWith(" " + slug)) {
+      return { company: comp, remainingQuery: cleaned.slice(0, cleaned.length - slug.length - 1).trim() };
+    }
+  }
+
+  return { company: null, remainingQuery: searchQuery };
+}
+
 export function applySearchFilter<T>(
   query: T,
   searchQuery: string | undefined,
@@ -321,17 +357,33 @@ export function applySearchFilter<T>(
     return query;
   }
 
-  const tokens = parseSearchTokens(searchQuery);
-  if (tokens.length === 0) {
-    return query;
+  const { company: matchedComp, remainingQuery } = extractCompanyFromQuery(searchQuery, companies);
+
+  // If a multi-word or standalone company matched with no remaining search term
+  if (matchedComp && !remainingQuery.trim()) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (query as any).or(
+      `company_id.eq.${matchedComp.id},title.ilike.%${matchedComp.name}%,summary.ilike.%${matchedComp.name}%`
+    );
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let currentQuery = query as any;
 
+  if (matchedComp) {
+    currentQuery = currentQuery.or(
+      `company_id.eq.${matchedComp.id},title.ilike.%${matchedComp.name}%,summary.ilike.%${matchedComp.name}%`
+    );
+  }
+
+  const tokens = parseSearchTokens(remainingQuery || searchQuery);
+  if (tokens.length === 0) {
+    return currentQuery as T;
+  }
+
   for (const token of tokens) {
-    // Only attempt company matching if the token is at least 3 characters and not a common stopword
-    const shouldCheckCompany = token.length >= 3 && !COMMON_SEARCH_STOPWORDS.has(token);
+    // Single-word company check if not already matched
+    const shouldCheckCompany = !matchedComp && token.length >= 3 && !COMMON_SEARCH_STOPWORDS.has(token);
 
     const matchedComps = shouldCheckCompany
       ? companies.filter((c) => {
@@ -345,24 +397,37 @@ export function applySearchFilter<T>(
         })
       : [];
 
+    // Sanitize special characters for Postgres regex word-boundary matching
+    const safeRegex = token.replace(/[[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+
+    // Case variations for tag matching
+    const titleCasedTag = token.charAt(0).toUpperCase() + token.slice(1);
+    const upperCasedTag = token.toUpperCase();
+    const tagConditions = Array.from(new Set([token, titleCasedTag, upperCasedTag]))
+      .map((t) => `tags.cs.{"${t}"}`)
+      .join(",");
+
     if (matchedComps.length === 1) {
       currentQuery = currentQuery.or(
-        `title.ilike.%${token}%,summary.ilike.%${token}%,company_id.eq.${matchedComps[0].id}`
+        `title.imatch.\\y${safeRegex}\\y,summary.imatch.\\y${safeRegex}\\y,${tagConditions},company_id.eq.${matchedComps[0].id}`
       );
     } else if (matchedComps.length > 1) {
       const ids = matchedComps.map((c) => c.id).join(",");
       currentQuery = currentQuery.or(
-        `title.ilike.%${token}%,summary.ilike.%${token}%,company_id.in.(${ids})`
+        `title.imatch.\\y${safeRegex}\\y,summary.imatch.\\y${safeRegex}\\y,${tagConditions},company_id.in.(${ids})`
       );
     } else {
       currentQuery = currentQuery.or(
-        `title.ilike.%${token}%,summary.ilike.%${token}%`
+        `title.imatch.\\y${safeRegex}\\y,summary.imatch.\\y${safeRegex}\\y,${tagConditions}`
       );
     }
   }
 
   return currentQuery as T;
 }
+
+// Track whether fts (Full-Text Search) column is active in PostgreSQL
+let isFtsAvailable: boolean | null = null;
 
 export async function getPostCount(options?: PostQueryOptions): Promise<number> {
   const { companyId, category, searchQuery, duration } = options || {};
@@ -371,25 +436,52 @@ export async function getPostCount(options?: PostQueryOptions): Promise<number> 
     return 0;
   }
 
-  try {
-    let query = supabase.from("posts").select("*", { count: "exact", head: true });
-
+  const buildBaseQuery = () => {
+    let q = supabase!.from("posts").select("*", { count: "exact", head: true });
     if (companyId && companyId !== "all") {
-      query = query.eq("company_id", companyId);
+      q = q.eq("company_id", companyId);
     }
     if (category && category !== "All") {
       const variations = getCategoryTagVariations(category);
-      query = query.overlaps("tags", variations);
+      q = q.overlaps("tags", variations);
     }
     if (duration && duration !== "all") {
       const times = getDurationReadTimes(duration);
       if (times.length > 0) {
-        query = query.in("read_time", times);
+        q = q.in("read_time", times);
       }
     }
-    if (searchQuery && searchQuery.trim()) {
+    return q;
+  };
+
+  try {
+    const trimmedSearch = searchQuery?.trim();
+
+    // 1. Attempt PostgreSQL Full-Text Search if fts column may be present
+    if (trimmedSearch && isFtsAvailable !== false) {
+      try {
+        let ftsQuery = buildBaseQuery().textSearch("fts", trimmedSearch, {
+          type: "websearch",
+          config: "english",
+        });
+        const { count, error } = await ftsQuery;
+        if (!error) {
+          isFtsAvailable = true;
+          return typeof count === "number" ? count : 0;
+        }
+        if (error.code === "42703") {
+          isFtsAvailable = false;
+        }
+      } catch {
+        isFtsAvailable = false;
+      }
+    }
+
+    // 2. High-precision word-boundary + tag + multi-word company fallback
+    let query = buildBaseQuery();
+    if (trimmedSearch) {
       const companies = await getCachedCompanies();
-      query = applySearchFilter(query, searchQuery, companies);
+      query = applySearchFilter(query, trimmedSearch, companies);
     }
 
     const { count, error } = await query;
@@ -404,8 +496,6 @@ export async function getPostCount(options?: PostQueryOptions): Promise<number> 
   }
 }
 
-
-
 export async function getPosts(options?: PostQueryOptions): Promise<PostWithCompany[]> {
   const { offset = 0, limit = 40, companyId, category, searchQuery, duration } = options || {};
 
@@ -413,8 +503,8 @@ export async function getPosts(options?: PostQueryOptions): Promise<PostWithComp
     return [];
   }
 
-  try {
-    let query = supabase
+  const buildBaseQuery = () => {
+    let q = supabase!
       .from("posts")
       .select(
         `
@@ -432,21 +522,59 @@ export async function getPosts(options?: PostQueryOptions): Promise<PostWithComp
       .order("published_at", { ascending: false });
 
     if (companyId && companyId !== "all") {
-      query = query.eq("company_id", companyId);
+      q = q.eq("company_id", companyId);
     }
     if (category && category !== "All") {
       const variations = getCategoryTagVariations(category);
-      query = query.overlaps("tags", variations);
+      q = q.overlaps("tags", variations);
     }
     if (duration && duration !== "all") {
       const times = getDurationReadTimes(duration);
       if (times.length > 0) {
-        query = query.in("read_time", times);
+        q = q.in("read_time", times);
       }
     }
-    if (searchQuery && searchQuery.trim()) {
+    return q;
+  };
+
+  const normalizePosts = (data: any[]): PostWithCompany[] => {
+    return data.map((post: any) => ({
+      ...post,
+      company: post.companies || null,
+    })) as PostWithCompany[];
+  };
+
+  try {
+    const trimmedSearch = searchQuery?.trim();
+
+    // 1. Attempt PostgreSQL Full-Text Search if fts column may be present
+    if (trimmedSearch && isFtsAvailable !== false) {
+      try {
+        let ftsQuery = buildBaseQuery()
+          .textSearch("fts", trimmedSearch, {
+            type: "websearch",
+            config: "english",
+          })
+          .range(offset, offset + limit - 1);
+
+        const { data, error } = await ftsQuery;
+        if (!error && data) {
+          isFtsAvailable = true;
+          return normalizePosts(data);
+        }
+        if (error?.code === "42703") {
+          isFtsAvailable = false;
+        }
+      } catch {
+        isFtsAvailable = false;
+      }
+    }
+
+    // 2. High-precision word-boundary + tag + multi-word company fallback
+    let query = buildBaseQuery();
+    if (trimmedSearch) {
       const companies = await getCachedCompanies();
-      query = applySearchFilter(query, searchQuery, companies);
+      query = applySearchFilter(query, trimmedSearch, companies);
     }
 
     // Deterministic SQL offset range to prevent skipped or duplicated rows across pagination
@@ -463,14 +591,10 @@ export async function getPosts(options?: PostQueryOptions): Promise<PostWithComp
       return [];
     }
 
-    // Normalize company property
-    const normalized = data.map((post: PostWithCompany) => ({
-      ...post,
-      company: post.companies || null,
-    })) as PostWithCompany[];
+    const normalized = normalizePosts(data);
 
     // If fetching the first page of the general feed, apply interleaving directly
-    const isGeneralFeed = (!companyId || companyId === "all") && !searchQuery;
+    const isGeneralFeed = (!companyId || companyId === "all") && !trimmedSearch;
     if (isGeneralFeed && offset === 0) {
       return interleavePostsByCompany(normalized, 2);
     }

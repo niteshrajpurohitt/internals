@@ -28,12 +28,14 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
     setSearchQuery(query);
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
-      if (query.trim()) {
-        url.searchParams.set("q", query.trim());
-      } else {
-        url.searchParams.delete("q");
+      if (url.pathname === "/") {
+        if (query.trim()) {
+          url.searchParams.set("q", query.trim());
+        } else {
+          url.searchParams.delete("q");
+        }
+        window.history.replaceState({}, "", url.toString());
       }
-      window.history.replaceState({}, "", url.toString());
     }
   };
 

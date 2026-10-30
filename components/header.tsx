@@ -3,7 +3,7 @@
 import { useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { motion } from "motion/react";
+import { motion, AnimatePresence } from "motion/react";
 import { Search, X, User as UserIcon, LogOut, Sun, Moon } from "lucide-react";
 import { useSearch } from "@/lib/search-context";
 import { useAuth } from "@/lib/auth-context";
@@ -111,9 +111,29 @@ export function Header() {
             whileTap={{ scale: 0.90 }}
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             title={theme === "dark" ? "Light mode" : "Dark mode"}
-            className="flex h-7 w-7 cursor-pointer items-center justify-center border border-neutral-950/20 bg-white text-neutral-950/60 transition-colors hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-black dark:text-white/60 dark:hover:border-white/50 dark:hover:text-white"
+            className="relative flex h-7 w-7 overflow-hidden cursor-pointer items-center justify-center border border-neutral-950/20 bg-white text-neutral-950 hover:border-neutral-950/50 dark:border-white/20 dark:bg-black dark:text-white dark:hover:border-white/50"
           >
-            {theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+            <AnimatePresence initial={false}>
+              <motion.div
+                key={theme}
+                initial={{ rotate: -90, scale: 0.25, opacity: 0 }}
+                animate={{ rotate: 0, scale: 1, opacity: 1 }}
+                exit={{ rotate: 90, scale: 0.25, opacity: 0 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 480,
+                  damping: 24,
+                  mass: 0.6,
+                }}
+                className="absolute flex items-center justify-center text-neutral-950 dark:text-white"
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-3.5 w-3.5 stroke-[2.2]" />
+                ) : (
+                  <Moon className="h-3.5 w-3.5 stroke-[2.2]" />
+                )}
+              </motion.div>
+            </AnimatePresence>
           </motion.button>
 
           {/* Auth: Direct Sign In / Sign Out */}

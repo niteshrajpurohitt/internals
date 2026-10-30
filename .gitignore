@@ -51,3 +51,6 @@ FEATURES_TO_IMPLEMENT.md
 
 # scratch files
 scratch_*
+analysis_results.json
+analyze_database.ts
+inspect_fluff.js

@@ -30,6 +30,32 @@ const CATEGORIES: CategoryFilter[] = [
   "Web & Platforms",
 ];
 
+function SavedCounterRoll({ count }: { count: number }) {
+  const prevCountRef = useRef(count);
+  const direction = count >= prevCountRef.current ? 1 : -1;
+
+  useEffect(() => {
+    prevCountRef.current = count;
+  }, [count]);
+
+  return (
+    <span className="relative inline-flex h-3.5 min-w-[0.65rem] items-center justify-center overflow-hidden">
+      <AnimatePresence mode="popLayout" initial={false}>
+        <motion.span
+          key={count}
+          initial={{ y: direction >= 0 ? "100%" : "-100%", opacity: 0 }}
+          animate={{ y: "0%", opacity: 1 }}
+          exit={{ y: direction >= 0 ? "-100%" : "100%", opacity: 0 }}
+          transition={{ type: "spring", stiffness: 450, damping: 28 }}
+          className="inline-flex items-center justify-center leading-none"
+        >
+          {count}
+        </motion.span>
+      </AnimatePresence>
+    </span>
+  );
+}
+
 export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
   const { searchQuery, setSearchQuery } = useSearch();
   const { user, openLoginModal } = useAuth();
@@ -330,8 +356,10 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
           const isSaved = category === "Saved";
 
           return (
-            <button
+            <motion.button
               key={category}
+              whileTap={{ scale: 0.98 }}
+              transition={{ duration: 0.1 }}
               onClick={() => {
                 if (isSaved && !user) {
                   openLoginModal();
@@ -342,17 +370,34 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
                   }
                 }
               }}
-              className={`inline-flex h-7 shrink-0 cursor-pointer items-center justify-center border px-3 text-xs font-bold uppercase whitespace-nowrap transition-opacity duration-100 active:scale-98 ${
+              className={`inline-flex h-7 shrink-0 cursor-pointer items-center justify-center border px-3 text-xs font-bold uppercase whitespace-nowrap transition-opacity duration-100 ${
                 isActive
                   ? "border-neutral-950 bg-neutral-950 text-white dark:border-white dark:bg-white dark:text-black"
                   : "border-neutral-950/20 bg-white text-neutral-950/70 hover:border-neutral-950/50 hover:text-neutral-950 dark:border-white/20 dark:bg-[#111111] dark:text-white/70 dark:hover:border-white/50 dark:hover:text-white"
               }`}
             >
-              <span>
-                {category}
-                {isSaved && user && bookmarkCount > 0 ? ` (${bookmarkCount})` : ""}
+              <span className="inline-flex items-center">
+                <span>{category}</span>
+                {isSaved && (
+                  <AnimatePresence initial={false}>
+                    {user && bookmarkCount > 0 && (
+                      <motion.span
+                        key="saved-count-pill"
+                        initial={{ width: 0, opacity: 0 }}
+                        animate={{ width: "auto", opacity: 1 }}
+                        exit={{ width: 0, opacity: 0 }}
+                        transition={{ type: "spring", stiffness: 450, damping: 28 }}
+                        className="inline-flex items-center overflow-hidden whitespace-nowrap"
+                      >
+                        <span className="pl-1">(</span>
+                        <SavedCounterRoll count={bookmarkCount} />
+                        <span>)</span>
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                )}
               </span>
-            </button>
+            </motion.button>
           );
         })}
       </div>

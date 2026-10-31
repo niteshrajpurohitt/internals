@@ -31,11 +31,112 @@ function getRelativeTime(dateString: string): string {
   }
 }
 
+const BRAND_DOMAINS: Record<string, string> = {
+  netflix: "netflix.com",
+  airbnb: "airbnb.com",
+  canva: "canva.com",
+  shopify: "shopify.com",
+  slack: "slack.com",
+  github: "github.com",
+  meta: "meta.com",
+  spotify: "spotify.com",
+  chrome: "chrome.com",
+  "37signals": "37signals.com",
+  cloudflare: "cloudflare.com",
+  flyio: "fly.io",
+  discord: "discord.com",
+  tailscale: "tailscale.com",
+  datadog: "datadoghq.com",
+  aws: "aws.amazon.com",
+  supabase: "supabase.com",
+  clickhouse: "clickhouse.com",
+  tigerbeetle: "tigerbeetle.com",
+  cockroachdb: "cockroachlabs.com",
+  scylladb: "scylladb.com",
+  planetscale: "planetscale.com",
+  duckdb: "duckdb.org",
+  stripe: "stripe.com",
+  vercel: "vercel.com",
+  figma: "figma.com",
+  linear: "linear.app",
+  uber: "uber.com",
+  webdev: "web.dev",
+  react: "react.dev",
+  evilmartians: "evilmartians.com",
+  openai: "openai.com",
+  anthropic: "anthropic.com",
+  google: "research.google",
+  huggingface: "huggingface.co",
+  crowdstrike: "crowdstrike.com",
+  gitlab: "gitlab.com",
+  fastly: "fastly.com",
+  atlassian: "atlassian.com",
+};
+
+function getDomain(websiteUrl?: string, slug?: string): string {
+  const cleanSlug = (slug || "").toLowerCase();
+  if (cleanSlug && BRAND_DOMAINS[cleanSlug]) {
+    return BRAND_DOMAINS[cleanSlug];
+  }
+
+  if (websiteUrl) {
+    try {
+      const url = websiteUrl.startsWith("http") ? websiteUrl : `https://${websiteUrl}`;
+      const hostname = new URL(url).hostname.replace(/^www\./, "");
+      if (hostname.includes("netflix")) return "netflix.com";
+      if (hostname.includes("airbnb")) return "airbnb.com";
+      if (hostname.includes("canva")) return "canva.com";
+      if (hostname.includes("shopify")) return "shopify.com";
+      if (hostname.includes("slack")) return "slack.com";
+      if (hostname.includes("spotify")) return "spotify.com";
+      return hostname;
+    } catch {
+      // ignore
+    }
+  }
+
+  return "";
+}
+
+function CompanyLogo({
+  websiteUrl,
+  companyName,
+  slug,
+}: {
+  websiteUrl?: string;
+  companyName: string;
+  slug?: string;
+}) {
+  const [hasError, setHasError] = useState(false);
+  const domain = getDomain(websiteUrl, slug);
+
+  if (!domain || hasError) {
+    return (
+      <span className="font-mono text-[9px] font-bold text-neutral-950/70 dark:text-white/70">
+        {companyName.charAt(0).toUpperCase()}
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
+      alt=""
+      width={20}
+      height={20}
+      loading="lazy"
+      onError={() => setHasError(true)}
+      className="h-full w-full rounded-full object-cover"
+    />
+  );
+}
+
 export function PostCard({ post }: PostCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const { isBookmarked, toggleBookmark } = useBookmarks();
   const isSaved = isBookmarked(post.id);
-  const companyName = post.company?.name || post.companies?.name || "Engineering";
+  const company = post.company || post.companies;
+  const companyName = company?.name || "Engineering";
   const safeSourceUrl =
     post.source_url && /^https?:\/\//i.test(post.source_url)
       ? post.source_url
@@ -61,7 +162,17 @@ export function PostCard({ post }: PostCardProps) {
         {/* Header row */}
         <div className="flex items-center justify-between gap-2 border-b border-neutral-950/20 pb-2.5 font-mono text-xs dark:border-white/20">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="border border-neutral-950/50 bg-[#f4f3ef] px-2 py-0.5 text-[11px] font-bold tracking-wider text-neutral-950 uppercase dark:border-white/50 dark:bg-[#080808] dark:text-white">
+            {/* Circle Logo Box */}
+            <div className="flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full border border-neutral-950/20 bg-[#eeece6] dark:border-white/20 dark:bg-[#1a1a1a]">
+              <CompanyLogo
+                websiteUrl={company?.website_url}
+                companyName={companyName}
+                slug={company?.slug}
+              />
+            </div>
+
+            {/* Company Name Outside the Box */}
+            <span className="font-mono text-[11px] font-bold tracking-wider text-neutral-950 uppercase dark:text-white">
               {companyName}
             </span>
 

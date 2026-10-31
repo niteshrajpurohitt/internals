@@ -19,7 +19,7 @@ const TITLE_VETO_PATTERNS: RegExp[] = [
   /\b[a-zA-Z0-9\s]+\s+[0-9]+\.[0-9]+\s+(is\s+)?now available\b/i,
 
   // Product / Feature Launch Announcements & Changelogs
-  /^(announcing|introducing|meet|welcome to|new in)\s+[\w\s.-]+(dashboard|console|ui|portal|pricing|gateway|tier|service|feature|lens|scim|read replicas|specs|lead)\b/i,
+  /^(announcing|introducing|meet|welcome to|new in)\b/i,
   /\b(what's new in|monthly roundup|weekly roundup|quarterly update|product update|changelog|release notes)\b/i,
   /\b(this release (targets|introduces|brings|adds|fixes))\b/i,
   /^v?[0-9]+\.[0-9]+/i,
@@ -46,16 +46,16 @@ const TITLE_VETO_PATTERNS: RegExp[] = [
   /\b(gambling spam network|political commenting network|disrupting malicious uses of ai)\b/i,
 
   // Customer Marketing, Promotional & Sales Case Studies
-  /^how\s+(?!we\b|openai\b|discord\b|stripe\b|shopify\b|uber\b|canva\b|tailscale\b|linkedin\b|turbopack\b|turborepo\b|v0\b|linear\b|scylladb\b|clickhouse\b|supabase\b|cockroachdb\b|datadog\b|netflix\b|meta\b|aws\b|cloudflare\b|fastly\b|crowdstrike\b|github\b|gitlab\b|atlassian\b|migrating\b)[\w\s.-]+\s+(shipped|grew|delivers|powers|moved|built|scaled|protects|runs|uses|is using|transforms|accelerates with|chose|improved|reimagines|streamlines|replaces|replaced|modernizes)\b/i,
+  /^how\s+(?!we\b|openai\b|discord\b|stripe\b|shopify\b|uber\b|canva\b|tailscale\b|linkedin\b|turbopack\b|turborepo\b|v0\b|linear\b|scylladb\b|clickhouse\b|supabase\b|cockroachdb\b|datadog\b|netflix\b|meta\b|aws\b|cloudflare\b|fastly\b|crowdstrike\b|github\b|gitlab\b|atlassian\b|migrating\b)[\w\s.-]+\s+(shipped|grew|delivers|powers|moved|built|scaled|protects|runs|uses|is using|transforms|accelerates with|chose|improved|reimagines|streamlines|replaces|replaced|modernizes|ships|serves|manages)\b/i,
   /\b(customer story|customer spotlight|customer success|client story|case study)\b/i,
   /\b(pricing change|price update|discount|lower pricing|reduced pricing|cutting\s+.*prices|price reduction|new pricing|price decrease|price increase|black friday|cyber monday|\$[0-9]+\s+metal|improved infrastructure pricing)\b/i,
   /\b(training subscription|ai competency|university course|rust shop|20% sale|store sale|sale on most items|merch)\b/i,
   /\b(acquires|acquisition of|joins [a-zA-Z]+ to accelerate)\b/i,
 
   // Events, Conferences, Talks, Webinars & Podcasts
-  /\b(webinar|conference recap|visit our booth|fireside chat|panel discussion|roundtable|watch the recording|podcast episode|ship\s+202[0-9]\s+recap|p99 conf|summit.*retrospective|summit.*preview|roachfest|conference preview|security roundup)\b/i,
+  /\b(webinar|conference recap|visit our booth|fireside chat|panel discussion|roundtable|watch the recording|podcast episode|ship\s+202[0-9]\s+recap|p99 conf|summit|keynote|roachfest|conference preview|security roundup|hackathon|challenge|\$1m|bounty)\b/i,
   /\b(named a leader in gartner|forrester wave|magic quadrant|gartner.*report)\b/i,
-  /\b(intern spotlight|life at\s+[A-Z]|meet the team|employee spotlight|cx spotlight|why i joined|we are hiring)\b/i,
+  /\b(intern spotlight|life at\s+[A-Z]|meet the team|employee spotlight|cx spotlight|why i joined|we are hiring|exit interview)\b/i,
 ];
 
 // 2. High-Confidence Content-Only Vetoes: applied to body summary to reject non-technical articles without false-vetoing technical posts
@@ -84,6 +84,9 @@ const CORE_TECHNICAL_MARKERS = [
   "replication",
   "kernel",
   "microservices",
+  "monolith",
+  "bare-metal",
+  "task queue",
   "benchmark",
   "benchmarking",
   "benchmarked",
@@ -296,7 +299,12 @@ export function isDisqualifiedByVeto(title: string, content: string = ""): boole
     lowerTitle.includes("how we built") ||
     lowerTitle.includes("how we scaled") ||
     lowerTitle.includes("how we migrated") ||
+    lowerTitle.includes("how we designed") ||
+    lowerTitle.includes("how we architected") ||
+    lowerTitle.includes("under the hood") ||
+    lowerTitle.includes("deep dive") ||
     lowerTitle.includes("postmortem") ||
+    lowerTitle.includes("post-mortem") ||
     lowerTitle.includes("outage analysis") ||
     lowerTitle.includes("root cause analysis") ||
     lowerTitle.includes("incident review");
@@ -329,7 +337,7 @@ export function calculateTechnicalScore(title: string, content: string = ""): nu
 
   // Explicit postmortem and failure analysis terms get instant pass boost (+3 points)
   if (
-    /\b(postmortem|outage|rca|incident|root\s+cause|disruption|crash|memory\s+leak|deadlock|data\s+loss)\b/i.test(
+    /\b(postmortem|post-mortem|outage|rca|incident|root\s+cause|disruption|crash|memory\s+leak|deadlock|data\s+loss)\b/i.test(
       title
     )
   ) {
@@ -375,8 +383,9 @@ export function isTechnicalEngineeringArticle(title: string, content: string = "
     return false;
   }
 
-  // Reject malformed HTML fragments or broken sentence starts
+  // Reject malformed HTML fragments, markdown blocks, or broken sentence starts
   if (
+    strippedContent.startsWith("```") ||
     /^(from is|is now|this release|\. [0-9]|on \. [0-9])/i.test(strippedContent) ||
     /GoogleAI Gateway/i.test(strippedContent) ||
     /\b(available on [a-zA-Z\s]*(gateway|marketplace|catalog))\b/i.test(strippedContent)

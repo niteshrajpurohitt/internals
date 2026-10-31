@@ -59,21 +59,21 @@ export function PostCard({ post }: PostCardProps) {
         className="flex flex-1 flex-col focus:outline-none focus-visible:ring-1 focus-visible:ring-neutral-950 dark:focus-visible:ring-white"
       >
         {/* Header row */}
-        <div className="flex items-center justify-between gap-2 border-b border-neutral-950/15 pb-2.5 font-mono text-xs dark:border-white/15">
+        <div className="flex items-center justify-between gap-2 border-b border-neutral-950/20 pb-2.5 font-mono text-xs dark:border-white/20">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="border border-neutral-950/60 bg-[#f4f3ef] px-2 py-0.5 text-[11px] font-bold tracking-wider text-neutral-950 uppercase dark:border-white/60 dark:bg-[#080808] dark:text-white">
+            <span className="border border-neutral-950/50 bg-[#f4f3ef] px-2 py-0.5 text-[11px] font-bold tracking-wider text-neutral-950 uppercase dark:border-white/50 dark:bg-[#080808] dark:text-white">
               {companyName}
             </span>
 
-            <span className="text-neutral-950/40 dark:text-white/40">·</span>
+            <span className="text-neutral-950/50 dark:text-white/50">·</span>
 
-            <span className="text-[10px] text-neutral-950/60 dark:text-white/60">
+            <span className="text-[10px] text-neutral-950/50 dark:text-white/50">
               {getRelativeTime(post.published_at)}
             </span>
 
             {post.read_time && (
               <>
-                <span className="text-neutral-950/40 dark:text-white/40">·</span>
+                <span className="text-neutral-950/50 dark:text-white/50">·</span>
                 <span className="text-[10px] text-neutral-950/50 dark:text-white/50">
                   {post.read_time}
                 </span>
@@ -97,7 +97,7 @@ export function PostCard({ post }: PostCardProps) {
               className={`relative z-10 flex h-5 w-5 cursor-pointer items-center justify-center border transition-colors ${
                 isSaved
                   ? "border-neutral-950 bg-neutral-950 text-white dark:border-white dark:bg-white dark:text-black"
-                  : "border-neutral-950/25 bg-white text-neutral-950/50 hover:border-neutral-950 hover:text-neutral-950 dark:border-white/25 dark:bg-[#080808] dark:text-white/50 dark:hover:border-white dark:hover:text-white"
+                  : "border-neutral-950/20 bg-white text-neutral-950/50 hover:border-neutral-950 hover:text-neutral-950 dark:border-white/20 dark:bg-[#080808] dark:text-white/50 dark:hover:border-white dark:hover:text-white"
               }`}
             >
               <Bookmark className={`h-2.5 w-2.5 ${isSaved ? "fill-current" : ""}`} />
@@ -105,7 +105,7 @@ export function PostCard({ post }: PostCardProps) {
 
             {/* Launch tile */}
             <div className="relative h-5 w-5">
-              <div className="absolute inset-0 border border-neutral-950/40 bg-[#f4f3ef] dark:border-white/40 dark:bg-[#080808]" />
+              <div className="absolute inset-0 border border-neutral-950/20 bg-[#f4f3ef] dark:border-white/20 dark:bg-[#080808]" />
               <motion.span
                 initial={false}
                 animate={{
@@ -116,7 +116,7 @@ export function PostCard({ post }: PostCardProps) {
                 className={`absolute inset-0 flex items-center justify-center border shadow-xs transition-colors ${
                   isHovered
                     ? "border-neutral-950 bg-neutral-950 text-white dark:border-white dark:bg-white dark:text-black"
-                    : "border-neutral-950/40 bg-white text-neutral-950/70 dark:border-white/40 dark:bg-[#111111] dark:text-white/70"
+                    : "border-neutral-950/20 bg-white text-neutral-950/50 dark:border-white/20 dark:bg-[#111111] dark:text-white/50"
                 }`}
               >
                 <ArrowUpRight className="h-3 w-3" />
@@ -131,7 +131,7 @@ export function PostCard({ post }: PostCardProps) {
         </h2>
 
         {/* Summary */}
-        <p className="mt-2.5 line-clamp-2 text-xs leading-relaxed text-neutral-950/70 sm:line-clamp-3 sm:text-sm dark:text-white/75">
+        <p className="mt-2.5 line-clamp-2 text-xs leading-relaxed text-neutral-950/70 sm:line-clamp-3 sm:text-sm dark:text-white/70">
           {post.summary}
         </p>
       </a>

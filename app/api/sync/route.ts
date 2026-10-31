@@ -52,7 +52,8 @@ async function handleSync(req: NextRequest) {
 
   // Check if reclassification or database cleanup is requested
   if (req.nextUrl.searchParams.get("reclassify") === "true" || req.nextUrl.searchParams.get("clean") === "true") {
-    let allPosts: Array<{ id: string; title: string; summary: string; tags: string[] }> = [];
+    let allPosts: Array<{ id: string; title: string; summary: string; tags: string[]; source_url?: string }> = [];
+    const landmarkUrls = new Set([...LANDMARK_POSTMORTEMS, ...LANDMARK_CLASSICS].map((l) => l.sourceUrl));
     let page = 0;
     const pageSize = 1000;
 
@@ -60,7 +61,7 @@ async function handleSync(req: NextRequest) {
     while (true) {
       const { data: chunk, error: fetchErr } = await client
         .from("posts")
-        .select("id, title, summary, tags")
+        .select("id, title, summary, tags, source_url")
         .range(page * pageSize, (page + 1) * pageSize - 1);
 
       if (fetchErr) {
@@ -87,7 +88,37 @@ async function handleSync(req: NextRequest) {
           const cleanedTitle = cleanTitle(p.title);
           const decodedSummary = decodeHtmlEntities(p.summary || "");
 
-          // Check against veto patterns and quality gates
+          // 1. Ironclad Classics & Postmortems Immunity Shield: NEVER delete landmark articles
+          const isImmune =
+            Boolean(p.source_url && landmarkUrls.has(p.source_url)) ||
+            (p.tags || []).some(
+              (t) => t.toLowerCase().includes("classic") || t.toLowerCase().includes("postmortem")
+            );
+
+          if (isImmune) {
+            const newTags = detectCategories(cleanedTitle, decodedSummary, p.tags || []);
+            const currentSorted = (p.tags || []).slice().sort().join(",");
+            const newSorted = newTags.slice().sort().join(",");
+            const needsUpdate =
+              currentSorted !== newSorted ||
+              p.title !== cleanedTitle ||
+              p.summary !== decodedSummary;
+
+            if (needsUpdate) {
+              await client
+                .from("posts")
+                .update({
+                  title: cleanedTitle,
+                  summary: decodedSummary,
+                  tags: newTags,
+                })
+                .eq("id", p.id);
+              updatedCount++;
+            }
+            return;
+          }
+
+          // 2. Check against veto patterns and quality gates for general posts
           if (
             isMarketingFluff(cleanedTitle, decodedSummary) ||
             isMarketingFluff(p.title, p.summary || "")

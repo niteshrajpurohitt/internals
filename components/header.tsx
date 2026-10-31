@@ -107,6 +107,7 @@ export function Header() {
           {/* Theme Toggle */}
           <motion.button
             type="button"
+            suppressHydrationWarning
             onClick={toggleTheme}
             whileTap={{ scale: 0.90 }}
             aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}

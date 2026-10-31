@@ -1,8 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useState } from "react";
 
-type Theme = "dark" | "light";
+export type Theme = "dark" | "light";
 
 interface ThemeContextValue {
   theme: Theme;
@@ -14,30 +14,22 @@ const ThemeContext = createContext<ThemeContextValue>({
   toggleTheme: () => {},
 });
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const stored = localStorage.getItem("internals-theme") as Theme | null;
-        if (stored === "light" || stored === "dark") {
-          return stored;
-        }
-      } catch {
-        // localStorage not accessible
-      }
-    }
-    return "dark";
-  });
-
-  // Sync data-theme attribute whenever theme changes
-  useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
+export function ThemeProvider({
+  children,
+  initialTheme = "dark",
+}: {
+  children: React.ReactNode;
+  initialTheme?: Theme;
+}) {
+  const [theme, setTheme] = useState<Theme>(initialTheme);
 
   const toggleTheme = () => {
     setTheme((prev) => {
       const next: Theme = prev === "dark" ? "light" : "dark";
-      localStorage.setItem("internals-theme", next);
+      try {
+        localStorage.setItem("internals-theme", next);
+        document.cookie = `internals-theme=${next}; path=/; max-age=31536000; SameSite=Lax`;
+      } catch {}
       document.documentElement.setAttribute("data-theme", next);
       return next;
     });

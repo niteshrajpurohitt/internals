@@ -66,6 +66,10 @@
 }
 
 /* ─── Base ───────────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: dark;
+}
+
 html,
 body {
   background-color: #080808;
@@ -76,6 +80,12 @@ body {
 [data-theme="light"] body {
   background-color: #f4f3ef;
   color-scheme: light;
+}
+
+[data-theme="dark"],
+[data-theme="dark"] body {
+  background-color: #080808;
+  color-scheme: dark;
 }
 
 body {

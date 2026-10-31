@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import { cookies } from "next/headers";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "@/components/header";
@@ -23,8 +22,11 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#080808",
-  colorScheme: "dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#080808" },
+    { media: "(prefers-color-scheme: light)", color: "#f4f3ef" },
+  ],
+  colorScheme: "dark light",
 };
 
 export const metadata: Metadata = {
@@ -60,44 +62,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const cookieStore = await cookies();
-  const themeCookie = cookieStore.get("internals-theme")?.value;
-  const theme = themeCookie === "light" ? "light" : "dark";
-  const bg = theme === "light" ? "#f4f3ef" : "#080808";
-
   return (
     <html
       lang="en"
-      data-theme={theme}
       suppressHydrationWarning
-      style={{ backgroundColor: bg, colorScheme: theme }}
       className={`${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
     >
-      <head>
-        {/* Anti-FOUC: fallback in case cookie is stale or localStorage was updated out of band */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem('internals-theme');if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);document.documentElement.style.backgroundColor=t==='light'?'#f4f3ef':'#080808';document.documentElement.style.colorScheme=t;}}catch(e){}})();`,
-          }}
-        />
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `html,body{background-color:${bg} !important;color-scheme:${theme};}html[data-theme="light"],html[data-theme="light"] body{background-color:#f4f3ef !important;color-scheme:light;}html[data-theme="dark"],html[data-theme="dark"] body{background-color:#080808 !important;color-scheme:dark;}`,
-          }}
-        />
-      </head>
-      <body
-        style={{ backgroundColor: bg }}
-        className="relative flex min-h-screen flex-col overflow-x-hidden font-sans text-neutral-950 antialiased dark:text-white"
-      >
-        {/* Masked CAD Drafting Grid Layer */}
-        <div className="cad-grid-layer pointer-events-none fixed inset-0 z-0" aria-hidden="true" />
-        <ThemeProvider initialTheme={theme}>
+      <body className="relative flex min-h-screen flex-col overflow-x-hidden font-sans text-neutral-950 antialiased dark:text-white">
+        <ThemeProvider>
+          {/* Masked CAD Drafting Grid Layer */}
+          <div className="cad-grid-layer pointer-events-none fixed inset-0 z-0" aria-hidden="true" />
           <ToastProvider>
             <AuthProvider>
               <BookmarkProvider>

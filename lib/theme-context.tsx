@@ -1,47 +1,43 @@
 "use client";
 
-import React, { createContext, useContext, useState } from "react";
+import React, { useEffect, useState } from "react";
+import { ThemeProvider as NextThemesProvider, useTheme as useNextTheme } from "next-themes";
 
 export type Theme = "dark" | "light";
 
-interface ThemeContextValue {
-  theme: Theme;
-  toggleTheme: () => void;
-}
-
-const ThemeContext = createContext<ThemeContextValue>({
-  theme: "dark",
-  toggleTheme: () => {},
-});
-
-export function ThemeProvider({
-  children,
-  initialTheme = "dark",
-}: {
-  children: React.ReactNode;
-  initialTheme?: Theme;
-}) {
-  const [theme, setTheme] = useState<Theme>(initialTheme);
-
-  const toggleTheme = () => {
-    setTheme((prev) => {
-      const next: Theme = prev === "dark" ? "light" : "dark";
-      try {
-        localStorage.setItem("internals-theme", next);
-        document.cookie = `internals-theme=${next}; path=/; max-age=31536000; SameSite=Lax`;
-      } catch {}
-      document.documentElement.setAttribute("data-theme", next);
-      return next;
-    });
-  };
-
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <NextThemesProvider
+      attribute="data-theme"
+      defaultTheme="dark"
+      enableSystem={false}
+      storageKey="internals-theme"
+      disableTransitionOnChange
+    >
       {children}
-    </ThemeContext.Provider>
+    </NextThemesProvider>
   );
 }
 
 export function useTheme() {
-  return useContext(ThemeContext);
+  const { resolvedTheme, setTheme } = useNextTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // During SSR and before mount, default to "dark" to match server render
+  const theme: Theme = (mounted && resolvedTheme ? (resolvedTheme as Theme) : "dark") || "dark";
+
+  const toggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
+
+  return {
+    theme,
+    toggleTheme,
+    setTheme,
+    mounted,
+  };
 }

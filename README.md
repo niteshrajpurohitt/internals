@@ -11,7 +11,7 @@
 
 Most company blogs are buried beneath marketing announcements, product releases, webinar invites, and executive PR. Finding deep, production-tested systems engineering articles requires digging through dozens of individual sites.
 
-**Internals** aggregates and filters technical writing directly from world-class engineering teams (Cloudflare, OpenAI, Stripe, Uber, Netflix, Figma, Datadog, and 40+ more). 
+**Internals** aggregates and filters technical writing directly from world-class engineering teams (Cloudflare, OpenAI, Stripe, Uber, Netflix, Figma, Datadog, and 40+ more).
 
 Every post links directly to the original publisher — zero paywalls, zero full-text scraping.
 
@@ -20,15 +20,20 @@ Every post links directly to the original publisher — zero paywalls, zero full
 ## Features
 
 - **Strict Signal Filtering**: Automated veto engine that strips out product release notes, sales marketing, funding PR, and HR posts to ensure only deep technical articles make the feed.
-- **Categorized Feeds**: Fast client-side filtering across core disciplines:
-  - *Classics*
-  - *Postmortems & Incident Reviews*
-  - *Distributed Systems & Consensus*
-  - *Databases & Storage Engines*
-  - *Infrastructure & Cloud*
-  - *Low-Level Systems & Compilers*
-  - *AI & Machine Learning*
-- **Cross-Device Bookmarking**: Save articles to your private reading list with GitHub or Google authentication.
+- **Categorized Feeds**: Fast client-side and server-side filtering across core disciplines:
+  - _Classics_
+  - _Postmortems_
+  - _AI & Machine Learning_
+  - _Distributed Systems_
+  - _Databases & Storage_
+  - _Infrastructure & Cloud_
+  - _Low-Level & Compilers_
+  - _Web & Platforms_
+- **PostgreSQL Full-Text Search (FTS)**: Native `tsvector` weighted search (titles `A`, tags `B`, summary `C`) backed by a GIN index, with multi-word company matching and regex word-boundary fallback.
+- **Duration & Company Filtering**: Narrow articles by estimated reading time (_< 5 min_, _5 - 10 min_, _10+ min_) or isolate posts by engineering publication via the company selector.
+- **Publisher Favicon Proxy & Edge Caching**: Dedicated `/api/favicon` route serving 64px publisher icons with a 30-day edge CDN cache TTL to reduce latency and protect client privacy.
+- **Smart Feed Interleaving**: Company-aware round-robin feed distribution that ensures high-volume publications do not dominate the main feed.
+- **Cross-Device Bookmarking**: Save articles to your private reading list with GitHub or Google authentication, featuring physics-based stacked toasts and an animated rolling saved counter.
 - **CAD Architectural Design**: Minimalist technical aesthetic built with custom CAD dimension lines, corner markers, Space Grotesk, and JetBrains Mono.
 - **Automated Sync Engine**: Background ingestion pipeline running via GitHub Actions on a 6-hour cron schedule with secure bearer token authorization.
 - **High-Concurrency Edge Caching**: Native Vercel Edge caching with `stale-while-revalidate` on feed APIs to protect PostgreSQL database connections during viral traffic spikes.
@@ -40,8 +45,10 @@ Every post links directly to the original publisher — zero paywalls, zero full
 
 - **Framework**: [Next.js 16](https://nextjs.org/) (App Router, React 19, Server Components)
 - **Database & Auth**: [Supabase](https://supabase.com/) (PostgreSQL, Row Level Security, `@supabase/ssr`)
+- **Feed Ingestion**: [rss-parser](https://github.com/rbren/rss-parser) + custom scraping handlers
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **Animations**: [Motion](https://motion.dev/)
+- **Icons**: [Lucide React](https://lucide.dev/)
 - **Analytics**: [Vercel Analytics](https://vercel.com/analytics)
 - **Security**: Content Security Policy (CSP), `X-Frame-Options: DENY`, strict referrer policies
 - **Typography**: Space Grotesk & JetBrains Mono
@@ -84,7 +91,7 @@ SYNC_SECRET=your-secure-random-secret-for-cron-sync
 
 ### 4. Database Setup
 
-Run the SQL migration in `supabase/schema.sql` inside your Supabase SQL editor to create the `companies`, `posts`, and `bookmarks` tables with Row Level Security.
+Run the SQL migration in `supabase/schema.sql` inside your Supabase SQL editor to create the `companies`, `posts` (with full-text search `tsvector` column and GIN index), `user_bookmarks`, and `profiles` tables with Row Level Security.
 
 ### 5. Run the dev server
 
@@ -96,39 +103,8 @@ Visit [http://localhost:3000](http://localhost:3000) to view the application.
 
 ---
 
-## Project Structure
-
-```text
-internals/
-├── app/
-│   ├── layout.tsx             # Root layout, metadata, analytics & font definitions
-│   ├── page.tsx               # Homepage feed (ISR revalidated)
-│   ├── robots.ts              # Dynamic search engine crawler rules
-│   ├── sitemap.ts             # Dynamic XML sitemap for SEO discovery
-│   ├── opengraph-image.tsx    # Dynamic 1200x630 OpenGraph card generator
-│   └── api/
-│       ├── posts/             # Paginated feed queries with edge caching
-│       ├── audit/             # Feed content quality & veto auditing endpoint
-│       └── sync/              # Ingest & RSS sync route handler (guarded by SYNC_SECRET)
-├── components/
-│   ├── feed.tsx               # Interactive search, category & duration filters
-│   ├── post-card.tsx          # Technical article card with bookmark toggle
-│   ├── header.tsx             # Sticky navbar, search trigger, auth modal
-│   └── footer.tsx             # Fair use notice, privacy & terms links
-├── lib/
-│   ├── rss.ts                 # Feed parser, company sources & veto regexes
-│   ├── classics.ts            # Landmark postmortems & historic articles registry
-│   ├── supabase.ts            # Public read queries (posts, companies)
-│   ├── supabase-browser.ts    # Client-side singleton auth client
-│   └── supabase-server.ts     # Cookie-based SSR server client
-└── supabase/
-    └── schema.sql             # Database schema, indexes & RLS policies
-```
-
----
-
 ## Content & Fair Use Policy
 
-Internals operates strictly as an index and discovery directory. We link directly out to original publisher URLs and do not mirror, cache, or paywall full-text articles. 
+Internals operates strictly as an index and discovery directory. We link directly out to original publisher URLs and do not mirror, cache, or paywall full-text articles.
 
 If you represent an engineering blog and wish to update metadata, modify indexing frequency, or delist your feed, please [open a GitHub Delist Request](https://github.com/niteshrajpurohitt/internals/issues/new?title=Delist+Request:+[Company+Name]).

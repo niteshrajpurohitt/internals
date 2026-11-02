@@ -120,11 +120,12 @@ function CompanyLogo({
 
   return (
     <img
-      src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
+      src={`/api/favicon?domain=${encodeURIComponent(domain)}`}
       alt=""
       width={20}
       height={20}
       loading="lazy"
+      decoding="async"
       onError={() => setHasError(true)}
       className="h-full w-full rounded-full object-cover"
     />

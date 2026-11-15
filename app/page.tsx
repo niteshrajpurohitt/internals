@@ -1,14 +1,18 @@
+import { Suspense } from "react";
 import { getCompanies, getPosts, getPostCount } from "@/lib/supabase";
 import { createServerClientInstance } from "@/lib/supabase-server";
 import { Feed } from "@/components/feed";
+import { FeedSkeleton } from "@/components/feed-skeleton";
 import { Footer } from "@/components/footer";
 import { Container } from "@/components/container";
 import { Hero } from "@/components/hero";
 
 export const revalidate = 60; // ISR revalidate every 60 seconds
 
-export default async function HomePage() {
-  const [companies, posts, totalCount, supabase] = await Promise.all([
+// Fetches feed data separately so the page shell (header, hero) can be sent
+// immediately while posts stream in behind the <Suspense> boundary below.
+async function FeedSection() {
+  const [companies, posts, totalCount] = await Promise.all([
     getCompanies({ minPosts: 2 }).catch((err) => {
       console.warn("HomePage getCompanies warning:", err);
       return [];
@@ -21,19 +25,22 @@ export default async function HomePage() {
       console.warn("HomePage getPostCount warning:", err);
       return 0;
     }),
-    createServerClientInstance().catch(() => null),
   ]);
 
+  return <Feed initialPosts={posts} companies={companies} totalCount={totalCount} />;
+}
+
+export default async function HomePage() {
+  // Resolved before the first byte is sent so the hero is never shown and then
+  // hidden for logged-in users. getClaims() verifies the session JWT locally
+  // when the project uses asymmetric signing keys (no Auth server round-trip).
   let isLoggedIn = false;
-  if (supabase) {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      isLoggedIn = !!user;
-    } catch {
-      isLoggedIn = false;
-    }
+  try {
+    const supabase = await createServerClientInstance();
+    const { data } = await supabase.auth.getClaims();
+    isLoggedIn = !!data?.claims;
+  } catch {
+    isLoggedIn = false;
   }
 
   return (
@@ -45,9 +52,11 @@ export default async function HomePage() {
         {/* Hero Section: shown to logged-out visitors, hidden for logged-in readers */}
         <Hero initialIsLoggedIn={isLoggedIn} />
 
-        {/* Interactive Client Feed (Search, Filter, Cards) */}
+        {/* Interactive Client Feed (Search, Filter, Cards) — streamed in */}
         <section aria-label="Engineering Posts Feed">
-          <Feed initialPosts={posts} companies={companies} totalCount={totalCount} />
+          <Suspense fallback={<FeedSkeleton />}>
+            <FeedSection />
+          </Suspense>
         </section>
       </Container>
 
@@ -56,4 +65,3 @@ export default async function HomePage() {
     </main>
   );
 }
-

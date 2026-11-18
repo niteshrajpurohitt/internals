@@ -31,12 +31,13 @@ const CATEGORIES: CategoryFilter[] = [
 ];
 
 function SavedCounterRoll({ count }: { count: number }) {
-  const prevCountRef = useRef(count);
-  const direction = count >= prevCountRef.current ? 1 : -1;
-
-  useEffect(() => {
-    prevCountRef.current = count;
-  }, [count]);
+  // Track the previous count in state (not a ref) so render stays pure
+  const [prevCount, setPrevCount] = useState(count);
+  const [direction, setDirection] = useState(1);
+  if (count !== prevCount) {
+    setDirection(count > prevCount ? 1 : -1);
+    setPrevCount(count);
+  }
 
   return (
     <span className="relative inline-flex h-3.5 min-w-[0.65rem] items-center justify-center overflow-hidden">
@@ -220,8 +221,9 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
           const existingIds = new Set(prev.map((p) => p.id));
           const uniqueNew = data.posts.filter((p: PostWithCompany) => !existingIds.has(p.id));
           const isGeneral = selectedCompanyId === "all" && !searchQuery.trim();
-          const combined = [...prev, ...uniqueNew];
-          return isGeneral ? interleavePostsByCompany(combined, 2) : combined;
+          // Only interleave the newly loaded page and append it, so cards the
+          // reader has already seen never jump to a different position.
+          return [...prev, ...(isGeneral ? interleavePostsByCompany(uniqueNew, 2) : uniqueNew)];
         });
         setHasMore(data.hasMore);
       } else {

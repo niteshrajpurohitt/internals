@@ -68,6 +68,11 @@ export function getServiceSupabase() {
     } catch (err) {
       console.warn("Failed to initialize Supabase service client:", err);
     }
+  } else if (supabaseUrl) {
+    console.warn(
+      "[Supabase] SUPABASE_SERVICE_ROLE_KEY is not set; falling back to the anon key. " +
+        "Writes (sync, cleanup) will be rejected by row-level security."
+    );
   }
   return supabase;
 }
@@ -429,57 +434,129 @@ export function applySearchFilter<T>(
 // Track whether fts (Full-Text Search) column is active in PostgreSQL
 let isFtsAvailable: boolean | null = null;
 
+type BaseFilterOptions = Pick<PostQueryOptions, "companyId" | "category" | "duration">;
+
+function buildCountQuery(filters: BaseFilterOptions) {
+  let q = supabase!.from("posts").select("*", { count: "exact", head: true });
+  if (filters.companyId && filters.companyId !== "all") {
+    q = q.eq("company_id", filters.companyId);
+  }
+  if (filters.category && filters.category !== "All") {
+    q = q.overlaps("tags", getCategoryTagVariations(filters.category));
+  }
+  if (filters.duration && filters.duration !== "all") {
+    const times = getDurationReadTimes(filters.duration);
+    if (times.length > 0) q = q.in("read_time", times);
+  }
+  return q;
+}
+
+function buildListQuery(filters: BaseFilterOptions) {
+  let q = supabase!
+    .from("posts")
+    .select(
+      `
+      *,
+      companies (
+        id,
+        name,
+        slug,
+        website_url,
+        feed_url,
+        created_at
+      )
+    `
+    )
+    .order("published_at", { ascending: false })
+    // Tiebreaker: without a unique sort key, rows sharing a published_at can be
+    // returned in a different order per request, so pages skip/repeat posts.
+    .order("id", { ascending: false });
+
+  if (filters.companyId && filters.companyId !== "all") {
+    q = q.eq("company_id", filters.companyId);
+  }
+  if (filters.category && filters.category !== "All") {
+    q = q.overlaps("tags", getCategoryTagVariations(filters.category));
+  }
+  if (filters.duration && filters.duration !== "all") {
+    const times = getDurationReadTimes(filters.duration);
+    if (times.length > 0) q = q.in("read_time", times);
+  }
+  return q;
+}
+
+/**
+ * How a search query is executed. Decided once per (query + filters) and shared by
+ * getPosts() and getPostCount(), so the list and the total always use the same method.
+ *
+ * - "fts":    Postgres full-text search (title/tags/summary), used when it finds results.
+ * - "filter": word-boundary + tag + company matching. Used when the query names a
+ *             company (company names are not in the fts index), when fts finds
+ *             nothing, or when the fts column does not exist.
+ */
+type SearchPlan = { mode: "fts"; count: number } | { mode: "filter" };
+
+const PLAN_TTL_MS = 60 * 1000;
+const planCache = new Map<string, { expires: number; plan: Promise<SearchPlan> }>();
+
+async function computeSearchPlan(search: string, filters: BaseFilterOptions): Promise<SearchPlan> {
+  if (isFtsAvailable === false) return { mode: "filter" };
+
+  const companies = await getCachedCompanies().catch(() => [] as Company[]);
+  if (extractCompanyFromQuery(search, companies).company) {
+    return { mode: "filter" };
+  }
+
+  try {
+    const { count, error } = await buildCountQuery(filters).textSearch("fts", search, {
+      type: "websearch",
+      config: "english",
+    });
+    if (error) {
+      if (error.code === "42703") isFtsAvailable = false;
+      return { mode: "filter" };
+    }
+    isFtsAvailable = true;
+    return typeof count === "number" && count > 0 ? { mode: "fts", count } : { mode: "filter" };
+  } catch {
+    return { mode: "filter" };
+  }
+}
+
+function getSearchPlan(search: string, filters: BaseFilterOptions): Promise<SearchPlan> {
+  const key = JSON.stringify([search.toLowerCase(), filters.companyId, filters.category, filters.duration]);
+  const now = Date.now();
+  const cached = planCache.get(key);
+  if (cached && cached.expires > now) return cached.plan;
+
+  if (planCache.size > 500) {
+    for (const [k, v] of planCache) if (v.expires <= now) planCache.delete(k);
+    if (planCache.size > 500) planCache.clear();
+  }
+
+  const plan = computeSearchPlan(search, filters);
+  planCache.set(key, { expires: now + PLAN_TTL_MS, plan });
+  // Don't keep a failed lookup around
+  plan.catch(() => planCache.delete(key));
+  return plan;
+}
+
 export async function getPostCount(options?: PostQueryOptions): Promise<number> {
   const { companyId, category, searchQuery, duration } = options || {};
-
   if (!supabase) {
     return 0;
   }
-
-  const buildBaseQuery = () => {
-    let q = supabase!.from("posts").select("*", { count: "exact", head: true });
-    if (companyId && companyId !== "all") {
-      q = q.eq("company_id", companyId);
-    }
-    if (category && category !== "All") {
-      const variations = getCategoryTagVariations(category);
-      q = q.overlaps("tags", variations);
-    }
-    if (duration && duration !== "all") {
-      const times = getDurationReadTimes(duration);
-      if (times.length > 0) {
-        q = q.in("read_time", times);
-      }
-    }
-    return q;
-  };
+  const filters = { companyId, category, duration };
 
   try {
     const trimmedSearch = searchQuery?.trim();
+    let query = buildCountQuery(filters);
 
-    // 1. Attempt PostgreSQL Full-Text Search if fts column may be present
-    if (trimmedSearch && isFtsAvailable !== false) {
-      try {
-        let ftsQuery = buildBaseQuery().textSearch("fts", trimmedSearch, {
-          type: "websearch",
-          config: "english",
-        });
-        const { count, error } = await ftsQuery;
-        if (!error) {
-          isFtsAvailable = true;
-          return typeof count === "number" ? count : 0;
-        }
-        if (error.code === "42703") {
-          isFtsAvailable = false;
-        }
-      } catch {
-        isFtsAvailable = false;
-      }
-    }
-
-    // 2. High-precision word-boundary + tag + multi-word company fallback
-    let query = buildBaseQuery();
     if (trimmedSearch) {
+      const plan = await getSearchPlan(trimmedSearch, filters);
+      if (plan.mode === "fts") {
+        return plan.count;
+      }
       const companies = await getCachedCompanies();
       query = applySearchFilter(query, trimmedSearch, companies);
     }
@@ -496,91 +573,38 @@ export async function getPostCount(options?: PostQueryOptions): Promise<number> 
   }
 }
 
+type PostRowWithCompany = PostWithCompany & { companies?: Company | null };
+
+function normalizePosts(data: PostRowWithCompany[]): PostWithCompany[] {
+  return data.map((post) => ({
+    ...post,
+    company: post.companies || null,
+  }));
+}
+
 export async function getPosts(options?: PostQueryOptions): Promise<PostWithCompany[]> {
   const { offset = 0, limit = 40, companyId, category, searchQuery, duration } = options || {};
-
   if (!supabase) {
     return [];
   }
-
-  const buildBaseQuery = () => {
-    let q = supabase!
-      .from("posts")
-      .select(
-        `
-        *,
-        companies (
-          id,
-          name,
-          slug,
-          website_url,
-          feed_url,
-          created_at
-        )
-      `
-      )
-      .order("published_at", { ascending: false });
-
-    if (companyId && companyId !== "all") {
-      q = q.eq("company_id", companyId);
-    }
-    if (category && category !== "All") {
-      const variations = getCategoryTagVariations(category);
-      q = q.overlaps("tags", variations);
-    }
-    if (duration && duration !== "all") {
-      const times = getDurationReadTimes(duration);
-      if (times.length > 0) {
-        q = q.in("read_time", times);
-      }
-    }
-    return q;
-  };
-
-  const normalizePosts = (data: any[]): PostWithCompany[] => {
-    return data.map((post: any) => ({
-      ...post,
-      company: post.companies || null,
-    })) as PostWithCompany[];
-  };
+  const filters = { companyId, category, duration };
 
   try {
     const trimmedSearch = searchQuery?.trim();
+    let query = buildListQuery(filters);
 
-    // 1. Attempt PostgreSQL Full-Text Search if fts column may be present
-    if (trimmedSearch && isFtsAvailable !== false) {
-      try {
-        let ftsQuery = buildBaseQuery()
-          .textSearch("fts", trimmedSearch, {
-            type: "websearch",
-            config: "english",
-          })
-          .range(offset, offset + limit - 1);
-
-        const { data, error } = await ftsQuery;
-        if (!error && data) {
-          isFtsAvailable = true;
-          return normalizePosts(data);
-        }
-        if (error?.code === "42703") {
-          isFtsAvailable = false;
-        }
-      } catch {
-        isFtsAvailable = false;
+    if (trimmedSearch) {
+      const plan = await getSearchPlan(trimmedSearch, filters);
+      if (plan.mode === "fts") {
+        query = query.textSearch("fts", trimmedSearch, { type: "websearch", config: "english" });
+      } else {
+        const companies = await getCachedCompanies();
+        query = applySearchFilter(query, trimmedSearch, companies);
       }
     }
 
-    // 2. High-precision word-boundary + tag + multi-word company fallback
-    let query = buildBaseQuery();
-    if (trimmedSearch) {
-      const companies = await getCachedCompanies();
-      query = applySearchFilter(query, trimmedSearch, companies);
-    }
-
     // Deterministic SQL offset range to prevent skipped or duplicated rows across pagination
-    query = query.range(offset, offset + limit - 1);
-
-    const { data, error } = await query;
+    const { data, error } = await query.range(offset, offset + limit - 1);
 
     if (error) {
       console.warn("Supabase posts query failed:", error.message);
@@ -591,7 +615,7 @@ export async function getPosts(options?: PostQueryOptions): Promise<PostWithComp
       return [];
     }
 
-    const normalized = normalizePosts(data);
+    const normalized = normalizePosts(data as PostRowWithCompany[]);
 
     // If fetching the first page of the general feed, apply interleaving directly
     const isGeneralFeed = (!companyId || companyId === "all") && !trimmedSearch;

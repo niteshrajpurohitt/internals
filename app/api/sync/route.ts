@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase";
-import { isTimingSafeMatch } from "@/lib/server-utils";
+import { fetchAllRows, hasValidBearerSecret } from "@/lib/server-utils";
 import { fetchAndParseFeed, detectCategories, isMarketingFluff, decodeHtmlEntities, cleanTitle } from "@/lib/rss";
 import { LANDMARK_POSTMORTEMS, LANDMARK_CLASSICS } from "@/lib/classics";
 
@@ -29,19 +29,11 @@ async function handleSync(req: NextRequest) {
     );
   }
 
-  if (syncSecret) {
-    const authHeader = req.headers.get("authorization");
-    const searchParams = req.nextUrl.searchParams;
-    const providedSecret =
-      (authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null) ||
-      searchParams.get("secret")?.trim();
-
-    if (!providedSecret || !isTimingSafeMatch(providedSecret, syncSecret)) {
-      return NextResponse.json(
-        { error: "Unauthorized: Invalid or missing sync secret" },
-        { status: 401 }
-      );
-    }
+  if (syncSecret && !hasValidBearerSecret(req, syncSecret)) {
+    return NextResponse.json(
+      { error: "Unauthorized: send the sync secret as 'Authorization: Bearer <secret>'" },
+      { status: 401 }
+    );
   }
 
   // 2. Obtain Supabase Client
@@ -51,34 +43,54 @@ async function handleSync(req: NextRequest) {
   }
 
   // Check if reclassification or database cleanup is requested
-  if (req.nextUrl.searchParams.get("reclassify") === "true" || req.nextUrl.searchParams.get("clean") === "true") {
-    let allPosts: Array<{ id: string; title: string; summary: string; tags: string[]; source_url?: string }> = [];
+  const isMaintenance =
+    req.nextUrl.searchParams.get("reclassify") === "true" ||
+    req.nextUrl.searchParams.get("clean") === "true";
+
+  // Destructive maintenance modes must not be triggerable by a GET (link, prefetch, crawler).
+  if (isMaintenance && req.method !== "POST") {
+    return NextResponse.json(
+      { error: "Reclassify/clean deletes and rewrites posts, so it must be called with POST" },
+      { status: 405, headers: { Allow: "POST" } }
+    );
+  }
+
+  if (isMaintenance) {
+    type PostRow = { id: string; title: string; summary: string; tags: string[]; source_url?: string };
     const landmarkUrls = new Set([...LANDMARK_POSTMORTEMS, ...LANDMARK_CLASSICS].map((l) => l.sourceUrl));
-    let page = 0;
-    const pageSize = 1000;
 
-    // Paginate through the entire database to overcome PostgREST 1000-row limit
-    while (true) {
-      const { data: chunk, error: fetchErr } = await client
-        .from("posts")
-        .select("id, title, summary, tags, source_url")
-        .range(page * pageSize, (page + 1) * pageSize - 1);
-
-      if (fetchErr) {
-        return NextResponse.json(
-          { error: "Failed to fetch posts for reclassification", details: fetchErr.message },
-          { status: 500 }
-        );
-      }
-
-      if (!chunk || chunk.length === 0) break;
-      allPosts = allPosts.concat(chunk);
-      if (chunk.length < pageSize) break;
-      page++;
+    // Paginate through the entire database to overcome the PostgREST 1000-row limit
+    const postsResult = await fetchAllRows<PostRow>((from, to) =>
+      client.from("posts").select("id, title, summary, tags, source_url").order("id").range(from, to)
+    );
+    if (postsResult.error) {
+      return NextResponse.json(
+        { error: "Failed to fetch posts for reclassification", details: postsResult.error },
+        { status: 500 }
+      );
     }
+    const allPosts = postsResult.rows;
+
+    // Never delete a post somebody has bookmarked: deleting it would silently
+    // cascade-delete their bookmark. Such posts are kept (and re-tagged if possible).
+    const bookmarkResult = await fetchAllRows<{ post_id: string }>((from, to) =>
+      client.from("user_bookmarks").select("post_id").order("post_id").range(from, to)
+    );
+    if (bookmarkResult.error) {
+      return NextResponse.json(
+        {
+          error: "Failed to load bookmarks; refusing to delete posts without knowing which are bookmarked",
+          details: bookmarkResult.error,
+        },
+        { status: 500 }
+      );
+    }
+    const bookmarkedIds = new Set(bookmarkResult.rows.map((b) => b.post_id));
 
     let deletedCount = 0;
     let updatedCount = 0;
+    let keptBecauseBookmarked = 0;
+    const failedOperations: string[] = [];
 
     // Process in batches of 50
     for (let i = 0; i < allPosts.length; i += 50) {
@@ -105,7 +117,7 @@ async function handleSync(req: NextRequest) {
               p.summary !== decodedSummary;
 
             if (needsUpdate) {
-              await client
+              const { error } = await client
                 .from("posts")
                 .update({
                   title: cleanedTitle,
@@ -113,26 +125,30 @@ async function handleSync(req: NextRequest) {
                   tags: newTags,
                 })
                 .eq("id", p.id);
-              updatedCount++;
+              if (error) failedOperations.push(`update ${p.id}: ${error.message}`);
+              else updatedCount++;
             }
             return;
           }
 
           // 2. Check against veto patterns and quality gates for general posts
-          if (
-            isMarketingFluff(cleanedTitle, decodedSummary) ||
-            isMarketingFluff(p.title, p.summary || "")
-          ) {
-            await client.from("posts").delete().eq("id", p.id);
-            deletedCount++;
-            return;
-          }
-
           const newTags = detectCategories(cleanedTitle, decodedSummary, p.tags || []);
-          if (!newTags || newTags.length === 0) {
-            await client.from("posts").delete().eq("id", p.id);
-            deletedCount++;
-            return;
+          const shouldDelete =
+            isMarketingFluff(cleanedTitle, decodedSummary) ||
+            isMarketingFluff(p.title, p.summary || "") ||
+            !newTags ||
+            newTags.length === 0;
+
+          if (shouldDelete) {
+            if (bookmarkedIds.has(p.id)) {
+              keptBecauseBookmarked++;
+              if (!newTags || newTags.length === 0) return;
+            } else {
+              const { error } = await client.from("posts").delete().eq("id", p.id);
+              if (error) failedOperations.push(`delete ${p.id}: ${error.message}`);
+              else deletedCount++;
+              return;
+            }
           }
 
           const currentSorted = (p.tags || []).slice().sort().join(",");
@@ -143,7 +159,7 @@ async function handleSync(req: NextRequest) {
             p.summary !== decodedSummary;
 
           if (needsUpdate) {
-            await client
+            const { error } = await client
               .from("posts")
               .update({
                 title: cleanedTitle,
@@ -151,20 +167,27 @@ async function handleSync(req: NextRequest) {
                 tags: newTags,
               })
               .eq("id", p.id);
-            updatedCount++;
+            if (error) failedOperations.push(`update ${p.id}: ${error.message}`);
+            else updatedCount++;
           }
         })
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: `Database cleaned and reclassified across all ${allPosts.length} posts. Deleted ${deletedCount} non-engineering posts. Updated & re-tagged ${updatedCount} articles.`,
-      deletedCount,
-      updatedCount,
-      totalRemaining: allPosts.length - deletedCount,
-      durationMs: Date.now() - startTime,
-    });
+    return NextResponse.json(
+      {
+        success: failedOperations.length === 0,
+        message: `Database cleaned and reclassified across all ${allPosts.length} posts. Deleted ${deletedCount} non-engineering posts. Updated & re-tagged ${updatedCount} articles. Kept ${keptBecauseBookmarked} bookmarked posts that would otherwise have been deleted.`,
+        deletedCount,
+        updatedCount,
+        keptBecauseBookmarked,
+        failedCount: failedOperations.length,
+        failedOperations: failedOperations.slice(0, 20),
+        totalRemaining: allPosts.length - deletedCount,
+        durationMs: Date.now() - startTime,
+      },
+      { status: failedOperations.length === 0 ? 200 : 500 }
+    );
   }
 
   // Auto-heal company feed URLs with verified live endpoints
@@ -282,18 +305,20 @@ async function handleSync(req: NextRequest) {
   const companySlugToId = new Map(allCompanies.map((c) => [c.slug, c.id]));
 
   // 4. Fetch all existing source URLs to prevent duplicate insertions
-  const { data: existingPosts, error: postFetchError } = await client
-    .from("posts")
-    .select("source_url");
+  //    Paginated: a single select is capped at 1000 rows by PostgREST, which made
+  //    every post beyond the first 1000 look "new" on each run.
+  const existingResult = await fetchAllRows<{ source_url: string }>((from, to) =>
+    client.from("posts").select("source_url").order("source_url").range(from, to)
+  );
 
-  if (postFetchError) {
+  if (existingResult.error) {
     return NextResponse.json(
-      { error: "Failed to fetch existing posts", details: postFetchError.message },
+      { error: "Failed to fetch existing posts", details: existingResult.error },
       { status: 500 }
     );
   }
 
-  const existingUrls = new Set<string>((existingPosts || []).map((p) => p.source_url));
+  const existingUrls = new Set<string>(existingResult.rows.map((p) => p.source_url));
 
   const stats = {
     companies_scanned: companiesWithFeeds.length,

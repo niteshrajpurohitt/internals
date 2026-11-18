@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { unstable_rethrow } from "next/navigation";
 import { getCompanies, getPosts, getPostCount } from "@/lib/supabase";
 import { createServerClientInstance } from "@/lib/supabase-server";
 import { Feed } from "@/components/feed";
@@ -7,7 +8,8 @@ import { Footer } from "@/components/footer";
 import { Container } from "@/components/container";
 import { Hero } from "@/components/hero";
 
-export const revalidate = 60; // ISR revalidate every 60 seconds
+// Note: this page reads the auth cookie (to hide the hero for signed-in users), so it
+// is rendered per request; an ISR `revalidate` export would have no effect here.
 
 // Fetches feed data separately so the page shell (header, hero) can be sent
 // immediately while posts stream in behind the <Suspense> boundary below.
@@ -39,7 +41,9 @@ export default async function HomePage() {
     const supabase = await createServerClientInstance();
     const { data } = await supabase.auth.getClaims();
     isLoggedIn = !!data?.claims;
-  } catch {
+  } catch (err) {
+    // Let Next.js handle its own internal errors (e.g. dynamic-rendering signals)
+    unstable_rethrow(err);
     isLoggedIn = false;
   }
 

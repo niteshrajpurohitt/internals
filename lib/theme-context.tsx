@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useSyncExternalStore } from "react";
+
+const noopSubscribe = () => () => {};
 import { ThemeProvider as NextThemesProvider, useTheme as useNextTheme } from "next-themes";
 
 export type Theme = "dark" | "light";
@@ -21,11 +23,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
 export function useTheme() {
   const { resolvedTheme, setTheme } = useNextTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // false during server render + hydration, true afterwards (no setState-in-effect needed)
+  const mounted = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false
+  );
 
   // During SSR and before mount, default to "dark" to match server render
   const theme: Theme = (mounted && resolvedTheme ? (resolvedTheme as Theme) : "dark") || "dark";

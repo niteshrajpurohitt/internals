@@ -31,7 +31,9 @@ const TITLE_VETO_PATTERNS: RegExp[] = [
   // Corporate PR, Deal Announcements, Partnerships & Funding
   /\b(partner(s|ed|ing)?\s+(with|for|to)|partnership\s+(with|to|for)|join forces|teams? up with|teaming up with|\bx\s+[A-Z][a-zA-Z0-9]+)\b/i,
   /\b(strategic partnership|content partnership|partner network|commercial agreement|strategic alliance|enterprise agreement|sovereign enterprise|for enterprise|for enterprise apps)\b/i,
-  /\b(opens?|opening|new)\s+([a-zA-Z\s]+)?(hub|office|headquarters|campus|center|centre)\b/i,
+  // Office/campus openings. Kept narrow (max one word between, no "center") so that
+  // infrastructure posts like "Building a new data center network" are not vetoed.
+  /\b(opens?|opening|new)\s+(?:[a-zA-Z]+\s+)?(hub|office|offices|headquarters|campus)\b/i,
   /\b(series\s+[a-f]|funding round|valuation|ipo|seed round|venture round|capital raised)\b/i,
   /\b(appointed as|joins as|executive team|welcoming our new|hires? as|c-suite)\b/i,
   /\b(earnings call|shareholder letter|quarterly results|financial results|fiscal year)\b/i,
@@ -53,7 +55,7 @@ const TITLE_VETO_PATTERNS: RegExp[] = [
   /\b(acquires|acquisition of|joins [a-zA-Z]+ to accelerate)\b/i,
 
   // Events, Conferences, Talks, Webinars & Podcasts
-  /\b(webinar|conference recap|visit our booth|fireside chat|panel discussion|roundtable|watch the recording|podcast episode|ship\s+202[0-9]\s+recap|p99 conf|summit|keynote|roachfest|conference preview|security roundup|hackathon|challenge|\$1m|bounty)\b/i,
+  /\b(webinar|conference recap|visit our booth|fireside chat|panel discussion|roundtable|watch the recording|podcast episode|ship\s+202[0-9]\s+recap|p99 conf|summit|keynote|roachfest|conference preview|security roundup|hackathon|\$1m|bounty)\b/i,
   /\b(named a leader in gartner|forrester wave|magic quadrant|gartner.*report)\b/i,
   /\b(intern spotlight|life at\s+[A-Z]|meet the team|employee spotlight|cx spotlight|why i joined|we are hiring|exit interview)\b/i,
 ];
@@ -729,12 +731,19 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+// Keyword regexes are compiled once and reused (they are matched thousands of times per sync).
+const keywordRegexCache = new Map<string, RegExp>();
+
 function matchesKeyword(text: string, kw: string): boolean {
   if (!text) return false;
-  const escaped = escapeRegex(kw.toLowerCase());
-  const prefix = /^[a-z0-9]/i.test(kw) ? "\\b" : "(?:^|\\s|[^a-zA-Z0-9])";
-  const suffix = /[a-z0-9]$/i.test(kw) ? "\\b" : "(?:$|\\s|[^a-zA-Z0-9])";
-  const regex = new RegExp(`${prefix}${escaped}${suffix}`, "i");
+  let regex = keywordRegexCache.get(kw);
+  if (!regex) {
+    const escaped = escapeRegex(kw.toLowerCase());
+    const prefix = /^[a-z0-9]/i.test(kw) ? "\\b" : "(?:^|\\s|[^a-zA-Z0-9])";
+    const suffix = /[a-z0-9]$/i.test(kw) ? "\\b" : "(?:$|\\s|[^a-zA-Z0-9])";
+    regex = new RegExp(`${prefix}${escaped}${suffix}`, "i");
+    keywordRegexCache.set(kw, regex);
+  }
   return regex.test(text);
 }
 
@@ -834,50 +843,63 @@ export function detectCategories(
   return tagsArray.slice(0, 4);
 }
 
+const NAMED_ENTITIES: Record<string, string> = {
+  quot: '"',
+  apos: "'",
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  nbsp: " ",
+  rsquo: "'",
+  lsquo: "'",
+  rdquo: '"',
+  ldquo: '"',
+  mdash: "—",
+  ndash: "–",
+  hellip: "…",
+};
+
+function safeFromCodePoint(code: number, original: string): string {
+  if (!Number.isFinite(code) || code < 0 || code > 0x10ffff) return original;
+  try {
+    return String.fromCodePoint(code);
+  } catch {
+    return original;
+  }
+}
+
 export function decodeHtmlEntities(text: string): string {
   if (!text) return "";
-  return text
-    // Decimal entities: &#39; -> '
-    .replace(/&#(\d+);/g, (_, dec) => {
-      try {
-        return String.fromCharCode(parseInt(dec, 10));
-      } catch {
-        return _;
-      }
-    })
-    // Hex entities: &#x27; -> '
-    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => {
-      try {
-        return String.fromCharCode(parseInt(hex, 16));
-      } catch {
-        return _;
-      }
-    })
-    // Named entities
-    .replace(/&quot;/g, '"')
-    .replace(/&apos;/g, "'")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&rsquo;/g, "'")
-    .replace(/&lsquo;/g, "'")
-    .replace(/&rdquo;/g, '"')
-    .replace(/&ldquo;/g, '"')
-    .replace(/&mdash;/g, "—")
-    .replace(/&ndash;/g, "–")
-    .replace(/&hellip;/g, "…");
+  // Single pass so that "&amp;lt;" correctly becomes "&lt;" (not "<"), and
+  // fromCodePoint so that astral characters such as emoji decode correctly.
+  return text.replace(/&(#x[0-9a-fA-F]+|#\d+|[a-zA-Z]+);/g, (match, body: string) => {
+    if (body[0] === "#") {
+      const isHex = body[1] === "x" || body[1] === "X";
+      const code = parseInt(body.slice(isHex ? 2 : 1), isHex ? 16 : 10);
+      return safeFromCodePoint(code, match);
+    }
+    return NAMED_ENTITIES[body.toLowerCase()] ?? match;
+  });
 }
+
+const TITLE_SITE_NAMES =
+  "ClickHouse|Vercel|Stripe|Cloudflare|Netflix|OpenAI|Anthropic|GitHub|Slack|Uber|Canva|Meta|AWS|Discord|Tailscale|Fly\\.io|Datadog|Supabase|TigerBeetle|CockroachDB|ScyllaDB|PlanetScale|DuckDB|Hugging Face|Mistral|Chrome Developers|web\\.dev|React|Evil Martians|Google Research|The Cloudflare Blog";
+
+// Only strip a site suffix when it is a separate trailing segment, e.g.
+//   "Title | ClickHouse", "Title - Vercel", "Title — Cloudflare Blog", "Title - Engineering Blog"
+// A hyphen must have whitespace on both sides so words like "Re-engineering" are untouched,
+// and the suffix must end the title so "Title - Engineering lessons from X" is untouched.
+const TITLE_SUFFIX_REGEX = new RegExp(
+  `(?:\\s*\\|\\s*|\\s+[-—–•]\\s+)(?:(?:${TITLE_SITE_NAMES})(?:\\s+(?:Engineering\\s+)?Blog|\\s+Engineering)?|Engineering Blog|Engineering|Blog)\\s*$`,
+  "i"
+);
 
 export function cleanTitle(title: string): string {
   if (!title) return "";
-  let clean = decodeHtmlEntities(title).trim();
-  // Strip trailing site/company suffixes: e.g. " | ClickHouse", " - Vercel", " — Cloudflare Blog"
-  clean = clean.replace(
-    /\s*[|\-—–•]\s*(ClickHouse|Vercel|Stripe|Cloudflare|Netflix|OpenAI|Anthropic|GitHub|Slack|Uber|Canva|Meta|AWS|Discord|Tailscale|Fly\.io|Datadog|Supabase|TigerBeetle|CockroachDB|ScyllaDB|PlanetScale|DuckDB|Hugging Face|Mistral|Chrome Developers|web\.dev|React|Evil Martians|Google Research|The Cloudflare Blog|Engineering Blog|Engineering|Blog).*$/i,
-    ""
-  );
-  return clean.trim();
+  const clean = decodeHtmlEntities(title).trim();
+  const stripped = clean.replace(TITLE_SUFFIX_REGEX, "").trim();
+  // Never reduce a title to nothing (e.g. a post literally titled "Engineering")
+  return stripped || clean;
 }
 
 export function cleanHtmlSummary(htmlOrText: string = ""): string {
@@ -903,16 +925,49 @@ export function cleanHtmlSummary(htmlOrText: string = ""): string {
   return text.length > 280 ? text.slice(0, 277) + "..." : text;
 }
 
+// Used when a feed only exposes a short teaser, so the real length is unknown.
+export const DEFAULT_READ_TIME = "5 min read";
+
 export function estimateReadTime(text: string = ""): string {
-  const words = text.trim().split(/\s+/).length;
-  // If we have substantial full content, calculate directly
+  const plain = text.replace(/<[^>]*>/g, " ").trim();
+  const words = plain ? plain.split(/\s+/).length : 0;
+  // Only compute a real estimate when we actually have the article body
   if (words > 250) {
-    const minutes = Math.min(25, Math.max(3, Math.ceil(words / 190)));
+    const minutes = Math.min(60, Math.max(2, Math.ceil(words / 220)));
     return `${minutes} min read`;
   }
-  // If only summary/snippet is provided, estimate realistic technical read time (5–8 mins)
-  const dynamicMinutes = 5 + (words % 4);
-  return `${dynamicMinutes} min read`;
+  // Teaser-only feeds: we cannot know the length, so use one stable default
+  // instead of a pseudo-random number.
+  return DEFAULT_READ_TIME;
+}
+
+// Pick the longest text the feed gives us (full article body when available).
+function longestText(...candidates: Array<unknown>): string {
+  let best = "";
+  for (const c of candidates) {
+    if (typeof c === "string" && c.length > best.length) best = c;
+  }
+  return best;
+}
+
+function extractPublishedDate(html: string): string | null {
+  const patterns = [
+    /<meta[^>]+property=["']article:published_time["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']article:published_time["']/i,
+    /<meta[^>]+name=["'](?:date|publish[-_]?date|pubdate)["'][^>]+content=["']([^"']+)["']/i,
+    /"datePublished"\s*:\s*"([^"]+)"/i,
+    /<time[^>]+datetime=["']([^"']+)["']/i,
+  ];
+  for (const re of patterns) {
+    const m = html.match(re);
+    if (m) {
+      const d = new Date(m[1]);
+      if (!isNaN(d.getTime()) && d.getTime() <= Date.now() + 24 * 3600 * 1000) {
+        return d.toISOString();
+      }
+    }
+  }
+  return null;
 }
 
 export function generateSlug(title: string): string {
@@ -941,7 +996,9 @@ export async function fetchAndParseFeed(
     return fetchCustomFeed(feedUrl, existingUrls);
   }
 
-  try {
+  // Feed-level failures (network, HTTP, invalid XML) are thrown so the caller can
+  // report them in `failed_feeds`. Only individual corrupt items are skipped.
+  {
     const feed = await parser.parseURL(feedUrl);
     if (!feed.items || feed.items.length === 0) {
       return [];
@@ -1001,7 +1058,16 @@ export async function fetchAndParseFeed(
         if (!tags || tags.length === 0) {
           continue;
         }
-        const read_time = estimateReadTime(rawContent);
+        const itemRecord = item as Record<string, unknown>;
+        const read_time = estimateReadTime(
+          longestText(
+            itemRecord["content:encodedSnippet"],
+            itemRecord["content:encoded"],
+            item.contentSnippet,
+            item.content,
+            rawContent
+          )
+        );
 
         let published_at = new Date().toISOString();
         const rawDate = item.isoDate || item.pubDate;
@@ -1027,10 +1093,6 @@ export async function fetchAndParseFeed(
     }
 
     return parsedItems;
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.warn(`[RSS Parser] Failed to fetch feed at ${feedUrl}:`, msg);
-    return [];
   }
 }
 
@@ -1088,9 +1150,10 @@ async function fetchCustomFeed(
   };
 
   const config = configs[type];
-  if (!config) return [];
+  if (!config) throw new Error(`Unknown custom feed type "${type}"`);
 
-  try {
+  // Listing-page failures are thrown so the sync can report them in `failed_feeds`.
+  {
     const res = await fetch(config.listingUrl, {
       headers: {
         "User-Agent": "internals-aggregator/1.0 (+https://internals.niteshrajpurohit.in; discovery engine)",
@@ -1100,7 +1163,7 @@ async function fetchCustomFeed(
       signal: AbortSignal.timeout(8000),
     });
 
-    if (!res.ok) return [];
+    if (!res.ok) throw new Error(`Listing page ${config.listingUrl} returned HTTP ${res.status}`);
     const html = await res.text();
 
     const matchedLinks = new Set<string>();
@@ -1166,8 +1229,10 @@ async function fetchCustomFeed(
             source_url: url,
             summary,
             tags,
-            read_time: estimateReadTime(summary + " " + title + " detailed technical paper"),
-            published_at: new Date().toISOString(),
+            // Only OG metadata is available here, so the length is unknown
+            read_time: DEFAULT_READ_TIME,
+            // Use the article's real publish date when the page exposes it
+            published_at: extractPublishedDate(pageHtml) ?? new Date().toISOString(),
             slug: generateSlug(title),
           });
         } catch {
@@ -1177,9 +1242,6 @@ async function fetchCustomFeed(
     );
 
     return items;
-  } catch (err) {
-    console.warn(`[Custom Ingester] Failed to ingest ${type}:`, err);
-    return [];
   }
 }
 

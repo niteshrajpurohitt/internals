@@ -67,6 +67,6 @@ export async function GET(request: NextRequest) {
     console.error("Supabase OAuth code exchange error:", error.message);
   }
 
-  return NextResponse.redirect(`${origin}?auth_error=true`);
+  return NextResponse.redirect(`${targetOrigin}/?auth_error=true`);
 }
 

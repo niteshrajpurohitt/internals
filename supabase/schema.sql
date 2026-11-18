@@ -6,12 +6,11 @@
 -- 1. Create Extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
--- 2. Drop existing tables if re-running
-DROP TABLE IF EXISTS public.posts CASCADE;
-DROP TABLE IF EXISTS public.companies CASCADE;
+-- 2. This script is safe to re-run: it never drops tables or data.
+--    (It used to DROP the posts table, wiping every post and orphaning bookmarks.)
 
 -- 3. Create 'companies' Table
-CREATE TABLE public.companies (
+CREATE TABLE IF NOT EXISTS public.companies (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
@@ -21,7 +20,7 @@ CREATE TABLE public.companies (
 );
 
 -- 4. Create 'posts' Table
-CREATE TABLE public.posts (
+CREATE TABLE IF NOT EXISTS public.posts (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id UUID NOT NULL REFERENCES public.companies(id) ON DELETE CASCADE,
     title TEXT NOT NULL,
@@ -36,10 +35,10 @@ CREATE TABLE public.posts (
 );
 
 -- 5. Indexes for fast aggregation and querying
-CREATE INDEX idx_posts_published_at ON public.posts(published_at DESC);
-CREATE INDEX idx_posts_company_id ON public.posts(company_id);
-CREATE INDEX idx_posts_tags ON public.posts USING GIN (tags);
-CREATE INDEX idx_posts_fts ON public.posts USING GIN (fts);
+CREATE INDEX IF NOT EXISTS idx_posts_published_at ON public.posts(published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_posts_company_id ON public.posts(company_id);
+CREATE INDEX IF NOT EXISTS idx_posts_tags ON public.posts USING GIN (tags);
+CREATE INDEX IF NOT EXISTS idx_posts_fts ON public.posts USING GIN (fts);
 
 -- FTS Auto-update Trigger
 CREATE OR REPLACE FUNCTION public.posts_fts_trigger()
@@ -64,23 +63,27 @@ ALTER TABLE public.companies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
 
 -- 7. RLS Policies: Public Read Access (Anon and Authenticated users can SELECT)
-CREATE POLICY "Public companies are viewable by everyone" 
+DROP POLICY IF EXISTS "Public companies are viewable by everyone" ON public.companies;
+CREATE POLICY "Public companies are viewable by everyone"
 ON public.companies 
 FOR SELECT 
 USING (true);
 
-CREATE POLICY "Public posts are viewable by everyone" 
+DROP POLICY IF EXISTS "Public posts are viewable by everyone" ON public.posts;
+CREATE POLICY "Public posts are viewable by everyone"
 ON public.posts 
 FOR SELECT 
 USING (true);
 
 -- Writes are restricted to service_role (default deny for anon/authenticated)
+DROP POLICY IF EXISTS "Service role has full access to companies" ON public.companies;
 CREATE POLICY "Service role has full access to companies"
 ON public.companies
 FOR ALL
 USING (auth.jwt() ->> 'role' = 'service_role')
 WITH CHECK (auth.jwt() ->> 'role' = 'service_role');
 
+DROP POLICY IF EXISTS "Service role has full access to posts" ON public.posts;
 CREATE POLICY "Service role has full access to posts"
 ON public.posts
 FOR ALL
@@ -689,15 +692,18 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view their own profile" 
+DROP POLICY IF EXISTS "Users can view their own profile" ON public.profiles;
+CREATE POLICY "Users can view their own profile"
 ON public.profiles FOR SELECT 
 USING (auth.uid() = id);
 
-CREATE POLICY "Users can insert their own profile" 
+DROP POLICY IF EXISTS "Users can insert their own profile" ON public.profiles;
+CREATE POLICY "Users can insert their own profile"
 ON public.profiles FOR INSERT 
 WITH CHECK (auth.uid() = id);
 
-CREATE POLICY "Users can update their own profile" 
+DROP POLICY IF EXISTS "Users can update their own profile" ON public.profiles;
+CREATE POLICY "Users can update their own profile"
 ON public.profiles FOR UPDATE 
 USING (auth.uid() = id);
 
@@ -719,8 +725,8 @@ BEGIN
     )
     ON CONFLICT (id) DO UPDATE SET
         email = EXCLUDED.email,
-        full_name = coalesce(EXCLUDED.full_name, public.profiles.full_name),
-        avatar_url = coalesce(EXCLUDED.avatar_url, public.profiles.avatar_url),
+        full_name = coalesce(NULLIF(EXCLUDED.full_name, ''), public.profiles.full_name),
+        avatar_url = coalesce(NULLIF(EXCLUDED.avatar_url, ''), public.profiles.avatar_url),
         updated_at = timezone('utc'::text, now());
     RETURN NEW;
 EXCEPTION
@@ -729,11 +735,12 @@ EXCEPTION
         RAISE WARNING 'handle_new_user trigger error: %', SQLERRM;
         RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$;
 
+-- Only re-run when profile-relevant fields change, not on every sign-in/token refresh
 DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
-    AFTER INSERT OR UPDATE ON auth.users
+    AFTER INSERT OR UPDATE OF email, raw_user_meta_data ON auth.users
     FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
 
 -- ==============================================================================
@@ -753,6 +760,7 @@ CREATE INDEX IF NOT EXISTS idx_user_bookmarks_post_id ON public.user_bookmarks(p
 
 ALTER TABLE public.user_bookmarks ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can manage their own bookmarks" ON public.user_bookmarks;
 CREATE POLICY "Users can manage their own bookmarks"
 ON public.user_bookmarks
 FOR ALL

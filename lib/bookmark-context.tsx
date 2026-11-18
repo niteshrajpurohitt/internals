@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
+import React, { createContext, useContext, useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { useAuth } from "./auth-context";
 import { useToast } from "./toast-context";
 import { createBrowserClientInstance } from "./supabase-browser";
@@ -26,6 +26,7 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
   const [bookmarkError, setBookmarkError] = useState<string | null>(null);
 
   const supabase = useMemo(() => createBrowserClientInstance(), []);
+  const inFlightRef = useRef<Set<string>>(new Set());
 
   // Sync bookmarks whenever user logs in or out
   useEffect(() => {
@@ -85,6 +86,11 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // Ignore repeat clicks while a request for this post is still running.
+    // Without this, a fast double-click sent two inserts and left the UI wrong.
+    if (inFlightRef.current.has(postId)) return;
+    inFlightRef.current.add(postId);
+
     const wasBookmarked = bookmarkedPostIds.has(postId);
 
     // Optimistic state update
@@ -98,23 +104,29 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
       return next;
     });
 
+    // A real timeout: aborting cancels the HTTP request, so it can never succeed
+    // on the server after we have already reverted the UI.
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
     try {
-      const networkPromise = wasBookmarked
-        ? supabase
+      // Both operations are idempotent: saving twice or removing twice is a no-op, not an error.
+      const { error } = wasBookmarked
+        ? await supabase
             .from("user_bookmarks")
             .delete()
             .eq("user_id", user.id)
             .eq("post_id", postId)
-        : supabase
+            .abortSignal(controller.signal)
+        : await supabase
             .from("user_bookmarks")
-            .insert({ user_id: user.id, post_id: postId });
+            .upsert(
+              { user_id: user.id, post_id: postId },
+              { onConflict: "user_id,post_id", ignoreDuplicates: true }
+            )
+            .abortSignal(controller.signal);
 
-      const timeoutPromise = new Promise<{ error: Error }>((_, reject) =>
-        setTimeout(() => reject(new Error("Connection timed out")), 5000)
-      );
-
-      const result = (await Promise.race([networkPromise, timeoutPromise])) as { error?: Error | null } | null;
-      if (result?.error) throw result.error;
+      if (error) throw error;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Network error";
       console.warn("[Bookmarks] Toggle failed, reverting state:", msg);
@@ -132,6 +144,9 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
         }
         return reverted;
       });
+    } finally {
+      clearTimeout(timeoutId);
+      inFlightRef.current.delete(postId);
     }
   };
 
@@ -161,7 +176,11 @@ export function BookmarkProvider({ children }: { children: React.ReactNode }) {
         return [];
       }
 
-      return data as PostWithCompany[];
+      // Same shape as getPosts(): expose the joined row as `company` too
+      return (data as PostWithCompany[]).map((post) => ({
+        ...post,
+        company: post.companies || null,
+      }));
     } catch (err) {
       console.warn("[Bookmarks] Error fetching saved posts:", err);
       return [];

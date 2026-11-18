@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "@/lib/supabase";
-import { isTimingSafeMatch } from "@/lib/server-utils";
+import { hasValidBearerSecret } from "@/lib/server-utils";
 
 export const dynamic = "force-dynamic";
 
@@ -15,19 +15,11 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  if (syncSecret) {
-    const authHeader = req.headers.get("authorization");
-    const searchParams = req.nextUrl.searchParams;
-    const providedSecret =
-      (authHeader?.startsWith("Bearer ") ? authHeader.slice(7).trim() : null) ||
-      searchParams.get("secret")?.trim();
-
-    if (!providedSecret || !isTimingSafeMatch(providedSecret, syncSecret)) {
-      return NextResponse.json(
-        { error: "Unauthorized: Invalid or missing sync secret" },
-        { status: 401 }
-      );
-    }
+  if (syncSecret && !hasValidBearerSecret(req, syncSecret)) {
+    return NextResponse.json(
+      { error: "Unauthorized: send the sync secret as 'Authorization: Bearer <secret>'" },
+      { status: 401 }
+    );
   }
 
   const client = getServiceSupabase();

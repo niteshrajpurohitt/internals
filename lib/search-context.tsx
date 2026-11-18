@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState } from "react";
+import { useInitialUrlParam } from "./use-initial-url-param";
 
 interface SearchContextType {
   searchQuery: string;
@@ -13,19 +14,13 @@ const SearchContext = createContext<SearchContextType>({
 });
 
 export function SearchProvider({ children }: { children: React.ReactNode }) {
-  const [searchQuery, setSearchQuery] = useState(() => {
-    if (typeof window !== "undefined") {
-      try {
-        return new URLSearchParams(window.location.search).get("q") || "";
-      } catch {
-        return "";
-      }
-    }
-    return "";
-  });
+  // `null` = the user hasn't typed yet, so fall back to `?q=` from the URL.
+  const [typedQuery, setTypedQuery] = useState<string | null>(null);
+  const initialUrlQuery = useInitialUrlParam("q") ?? "";
+  const searchQuery = typedQuery ?? initialUrlQuery;
 
   const updateSearchQuery = (query: string) => {
-    setSearchQuery(query);
+    setTypedQuery(query);
     if (typeof window !== "undefined") {
       const url = new URL(window.location.href);
       if (url.pathname === "/") {
@@ -34,7 +29,7 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
         } else {
           url.searchParams.delete("q");
         }
-        window.history.replaceState({}, "", url.toString());
+        window.history.replaceState(window.history.state, "", url.toString());
       }
     }
   };

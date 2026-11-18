@@ -1,6 +1,7 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState, useMemo } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState, useMemo } from "react";
+import { useInitialUrlParam } from "./use-initial-url-param";
 import { User, AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { createBrowserClientInstance } from "./supabase-browser";
 import { useToast } from "./toast-context";
@@ -23,28 +24,22 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(() => {
-    if (typeof window !== "undefined") {
-      try {
-        return Boolean(new URLSearchParams(window.location.search).get("auth_error"));
-      } catch {
-        return false;
-      }
-    }
-    return false;
-  });
-  const [authError, setAuthError] = useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      try {
-        if (new URLSearchParams(window.location.search).get("auth_error")) {
-          return "Authentication was interrupted or failed. Please try again.";
-        }
-      } catch {
-        return null;
-      }
-    }
-    return null;
-  });
+  // `?auth_error=true` (set by /auth/callback) opens the modal with a message.
+  // Read via useInitialUrlParam so server and client render the same HTML first.
+  const cameBackWithAuthError = Boolean(useInitialUrlParam("auth_error"));
+  // `null` = no explicit open/close or error yet, so fall back to the URL param.
+  const [modalOpenOverride, setModalOpenOverride] = useState<boolean | null>(null);
+  const [authErrorOverride, setAuthErrorOverride] = useState<string | null | undefined>(undefined);
+
+  const isLoginModalOpen = modalOpenOverride ?? cameBackWithAuthError;
+  const authError =
+    authErrorOverride !== undefined
+      ? authErrorOverride
+      : cameBackWithAuthError
+        ? "Authentication was interrupted or failed. Please try again."
+        : null;
+  const setAuthError = useCallback((err: string | null) => setAuthErrorOverride(err), []);
+  const setIsLoginModalOpen = setModalOpenOverride;
 
   const { showToast } = useToast();
 

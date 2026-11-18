@@ -40,10 +40,11 @@ export async function GET(req: NextRequest) {
       }
     );
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
+    // Log the real database error server-side; never send it to the browser.
+    console.error("[api/posts] query failed:", err);
     return NextResponse.json(
-      { error: "Failed to fetch paginated posts", details: message },
-      { status: 500 }
+      { error: "Failed to fetch posts" },
+      { status: 500, headers: { "Cache-Control": "no-store" } }
     );
   }
 }

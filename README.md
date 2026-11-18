@@ -87,7 +87,7 @@ SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
 SYNC_SECRET=your-secure-random-secret-for-cron-sync
 ```
 
-> **Note on `SYNC_SECRET`**: Protects the `/api/sync` endpoint from unauthorized triggers. Must match the `SYNC_SECRET` repository secret configured in your GitHub Actions workflow.
+> **Note on `SYNC_SECRET`**: Protects the `/api/sync` and `/api/audit` endpoints from unauthorized triggers. Must match the `SYNC_SECRET` repository secret configured in your GitHub Actions workflow. Send it as a header (`Authorization: Bearer <secret>`); the `?secret=` query parameter is no longer accepted. The destructive maintenance modes (`?clean=true`, `?reclassify=true`) only work with `POST`, and never delete posts that a user has bookmarked.
 
 ### 4. Database Setup
 

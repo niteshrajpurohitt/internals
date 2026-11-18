@@ -5,6 +5,7 @@ import { motion } from "motion/react";
 import { ArrowUpRight, Bookmark } from "lucide-react";
 import { PostWithCompany } from "@/lib/types";
 import { useBookmarks } from "@/lib/bookmark-context";
+import { getCompanyDomain } from "@/lib/company-domain";
 
 interface PostCardProps {
   post: PostWithCompany;
@@ -31,73 +32,6 @@ function getRelativeTime(dateString: string): string {
   }
 }
 
-const BRAND_DOMAINS: Record<string, string> = {
-  netflix: "netflix.com",
-  airbnb: "airbnb.com",
-  canva: "canva.com",
-  shopify: "shopify.com",
-  slack: "slack.com",
-  github: "github.com",
-  meta: "meta.com",
-  spotify: "spotify.com",
-  chrome: "chrome.com",
-  "37signals": "37signals.com",
-  cloudflare: "cloudflare.com",
-  flyio: "fly.io",
-  discord: "discord.com",
-  tailscale: "tailscale.com",
-  datadog: "datadoghq.com",
-  aws: "aws.amazon.com",
-  supabase: "supabase.com",
-  clickhouse: "clickhouse.com",
-  tigerbeetle: "tigerbeetle.com",
-  cockroachdb: "cockroachlabs.com",
-  scylladb: "scylladb.com",
-  planetscale: "planetscale.com",
-  duckdb: "duckdb.org",
-  stripe: "stripe.com",
-  vercel: "vercel.com",
-  figma: "figma.com",
-  linear: "linear.app",
-  uber: "uber.com",
-  webdev: "web.dev",
-  react: "react.dev",
-  evilmartians: "evilmartians.com",
-  openai: "openai.com",
-  anthropic: "anthropic.com",
-  google: "research.google",
-  huggingface: "huggingface.co",
-  crowdstrike: "crowdstrike.com",
-  gitlab: "gitlab.com",
-  fastly: "fastly.com",
-  atlassian: "atlassian.com",
-};
-
-function getDomain(websiteUrl?: string, slug?: string): string {
-  const cleanSlug = (slug || "").toLowerCase();
-  if (cleanSlug && BRAND_DOMAINS[cleanSlug]) {
-    return BRAND_DOMAINS[cleanSlug];
-  }
-
-  if (websiteUrl) {
-    try {
-      const url = websiteUrl.startsWith("http") ? websiteUrl : `https://${websiteUrl}`;
-      const hostname = new URL(url).hostname.replace(/^www\./, "");
-      if (hostname.includes("netflix")) return "netflix.com";
-      if (hostname.includes("airbnb")) return "airbnb.com";
-      if (hostname.includes("canva")) return "canva.com";
-      if (hostname.includes("shopify")) return "shopify.com";
-      if (hostname.includes("slack")) return "slack.com";
-      if (hostname.includes("spotify")) return "spotify.com";
-      return hostname;
-    } catch {
-      // ignore
-    }
-  }
-
-  return "";
-}
-
 function CompanyLogo({
   websiteUrl,
   companyName,
@@ -108,7 +42,7 @@ function CompanyLogo({
   slug?: string;
 }) {
   const [hasError, setHasError] = useState(false);
-  const domain = getDomain(websiteUrl, slug);
+  const domain = getCompanyDomain(websiteUrl, slug);
 
   if (!domain || hasError) {
     return (

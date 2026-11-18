@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPosts, getPostCount } from "@/lib/supabase";
+import { getPosts, getPostCount, type FollowFilter } from "@/lib/supabase";
+import { slugToCategory } from "@/lib/feed-filters";
 
 export const dynamic = "force-dynamic";
+
+function splitList(value: string | null): string[] {
+  if (!value) return [];
+  return value
+    .split(",")
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -16,7 +25,28 @@ export async function GET(req: NextRequest) {
   const searchQuery = searchParams.get("q") || undefined;
   const duration = searchParams.get("duration") || undefined;
 
-  const queryOptions = { offset, limit, companyId, category, searchQuery, duration };
+  // "Following" feed: ?followCompanies=<id>,<id>&followCategories=<slug>,<slug>
+  // The ids come from the client (not the session) so the response stays cacheable
+  // and contains nothing personal. Unknown values are dropped.
+  const isFollowingFeed = searchParams.get("following") === "1";
+  const follows: FollowFilter | undefined = isFollowingFeed
+    ? {
+        companyIds: splitList(searchParams.get("followCompanies")).slice(0, 100),
+        categories: splitList(searchParams.get("followCategories"))
+          .map((slug) => slugToCategory(slug))
+          .filter((c): c is NonNullable<typeof c> => c !== null),
+      }
+    : undefined;
+
+  const queryOptions = {
+    offset,
+    limit,
+    companyId,
+    category: isFollowingFeed ? undefined : category,
+    searchQuery,
+    duration,
+    follows,
+  };
 
   try {
     const [posts, totalCount] = await Promise.all([

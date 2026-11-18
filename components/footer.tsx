@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { ExternalLink } from "lucide-react";
+import { TOPIC_CATEGORIES, categoryToSlug } from "@/lib/feed-filters";
 import { Container } from "@/components/container";
 import TechText from "@/components/tech-text";
 
@@ -65,6 +67,25 @@ export function Footer() {
             </span>
           </div>
         </div>
+
+        {/* Topic pages: one crawlable link per category */}
+        <nav
+          aria-label="Topics"
+          className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-t border-neutral-950/10 pt-4 text-[11px] dark:border-white/10"
+        >
+          <span className="font-bold uppercase tracking-wider text-neutral-950/40 dark:text-white/40">
+            Topics
+          </span>
+          {TOPIC_CATEGORIES.map((category) => (
+            <Link
+              key={category}
+              href={`/category/${categoryToSlug(category)}`}
+              className="transition-colors hover:text-neutral-950 dark:hover:text-white"
+            >
+              {category}
+            </Link>
+          ))}
+        </nav>
       </Container>
 
       {/* Full-bleed interactive wordmark */}

@@ -31,9 +31,13 @@ Every post links directly to the original publisher — zero paywalls, zero full
   - _Web & Platforms_
 - **PostgreSQL Full-Text Search (FTS)**: Native `tsvector` weighted search (titles `A`, tags `B`, summary `C`) backed by a GIN index, with multi-word company matching and regex word-boundary fallback.
 - **Duration & Company Filtering**: Narrow articles by estimated reading time (_< 5 min_, _5 - 10 min_, _10+ min_) or isolate posts by engineering publication via the company selector.
+- **Shareable Filter Links**: Category, company and duration filters are written to the URL (e.g. `/?category=postmortems&company=cloudflare`), so any view can be bookmarked or shared. Shared links are rendered server-side with the filters applied and get a matching page title.
+- **Following Feed**: Signed-in readers can follow companies and categories (the `+` button next to the selected filter, or **Follow** on a company/category page) and read posts from everything they follow under the **Following** tab.
+- **Category & Company Pages**: Pre-rendered, hourly-revalidated landing pages at `/category/<slug>` and `/company/<slug>` with their own titles, descriptions and canonical URLs, all listed in `sitemap.xml` for search engines.
 - **Publisher Favicon Proxy & Edge Caching**: Dedicated `/api/favicon` route serving 64px publisher icons with a 30-day edge CDN cache TTL to reduce latency and protect client privacy.
 - **Smart Feed Interleaving**: Company-aware round-robin feed distribution that ensures high-volume publications do not dominate the main feed.
 - **Cross-Device Bookmarking**: Save articles to your private reading list with GitHub or Google authentication, featuring physics-based stacked toasts and an animated rolling saved counter.
+- **Tested Signal Filter**: A [Vitest](https://vitest.dev/) suite covers the marketing veto rules, category tagging, title/summary cleanup, filter URLs and feed interleaving.
 - **CAD Architectural Design**: Minimalist technical aesthetic built with custom CAD dimension lines, corner markers, Space Grotesk, and JetBrains Mono.
 - **Automated Sync Engine**: Background ingestion pipeline running via GitHub Actions on a 6-hour cron schedule with secure bearer token authorization.
 - **High-Concurrency Edge Caching**: Native Vercel Edge caching with `stale-while-revalidate` on feed APIs to protect PostgreSQL database connections during viral traffic spikes.
@@ -48,6 +52,7 @@ Every post links directly to the original publisher — zero paywalls, zero full
 - **Feed Ingestion**: [rss-parser](https://github.com/rbren/rss-parser) + custom scraping handlers
 - **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
 - **Animations**: [Motion](https://motion.dev/)
+- **Testing**: [Vitest](https://vitest.dev/)
 - **Icons**: [Lucide React](https://lucide.dev/)
 - **Analytics**: [Vercel Analytics](https://vercel.com/analytics)
 - **Security**: Content Security Policy (CSP), `X-Frame-Options: DENY`, strict referrer policies
@@ -91,7 +96,9 @@ SYNC_SECRET=your-secure-random-secret-for-cron-sync
 
 ### 4. Database Setup
 
-Run the SQL migration in `supabase/schema.sql` inside your Supabase SQL editor to create the `companies`, `posts` (with full-text search `tsvector` column and GIN index), `user_bookmarks`, and `profiles` tables with Row Level Security.
+Run the SQL migration in `supabase/schema.sql` inside your Supabase SQL editor to create the `companies`, `posts` (with full-text search `tsvector` column and GIN index), `user_bookmarks`, `user_follows`, and `profiles` tables with Row Level Security.
+
+**Upgrading an existing database?** Run the files in `supabase/migrations/` that you haven't applied yet, in date order. For the Following feed that is `20261119_add_user_follows.sql`. Each migration is safe to run more than once.
 
 ### 5. Run the dev server
 
@@ -100,6 +107,13 @@ npm run dev
 ```
 
 Visit [http://localhost:3000](http://localhost:3000) to view the application.
+
+### 6. Run the tests
+
+```bash
+npm test          # run once
+npm run test:watch # re-run on file changes
+```
 
 ---
 

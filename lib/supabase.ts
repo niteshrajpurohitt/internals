@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { Company, PostWithCompany } from "./types";
 import { interleavePostsByCompany } from "./feed-utils";
+import { isTopicCategory } from "./feed-filters";
 
 function cleanSupabaseUrl(url?: string): string | null {
   if (!url) return null;
@@ -137,6 +138,40 @@ export interface PostQueryOptions {
   category?: string;
   searchQuery?: string;
   duration?: string;
+  /** "Following" feed: posts from any followed company OR in any followed category. */
+  follows?: FollowFilter;
+}
+
+export interface FollowFilter {
+  companyIds: string[];
+  categories: string[];
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * PostgREST `or=(...)` expression matching followed companies or categories.
+ * Each tag gets its own `tags.cs.{"…"}` condition (the same form the search filter
+ * uses), so tag names with spaces, "&" or "+" are quoted safely.
+ * Returns null when there is nothing valid to match.
+ */
+export function buildFollowOrFilter(follows: FollowFilter): string | null {
+  const conditions: string[] = [];
+
+  const ids = Array.from(new Set(follows.companyIds.filter((id) => UUID_RE.test(id)))).slice(0, 100);
+  if (ids.length > 0) conditions.push(`company_id.in.(${ids.join(",")})`);
+
+  const tags = new Set<string>();
+  for (const category of follows.categories) {
+    if (!isTopicCategory(category)) continue;
+    for (const tag of getCategoryTagVariations(category)) tags.add(tag);
+  }
+  for (const tag of tags) {
+    // Tag values are our own constants; strip quote/backslash just in case.
+    conditions.push(`tags.cs.{"${tag.replace(/["\\]/g, "")}"}`);
+  }
+
+  return conditions.length > 0 ? conditions.join(",") : null;
 }
 
 export function getDurationReadTimes(duration?: string): string[] {
@@ -434,7 +469,7 @@ export function applySearchFilter<T>(
 // Track whether fts (Full-Text Search) column is active in PostgreSQL
 let isFtsAvailable: boolean | null = null;
 
-type BaseFilterOptions = Pick<PostQueryOptions, "companyId" | "category" | "duration">;
+type BaseFilterOptions = Pick<PostQueryOptions, "companyId" | "category" | "duration" | "follows">;
 
 function buildCountQuery(filters: BaseFilterOptions) {
   let q = supabase!.from("posts").select("*", { count: "exact", head: true });
@@ -447,6 +482,11 @@ function buildCountQuery(filters: BaseFilterOptions) {
   if (filters.duration && filters.duration !== "all") {
     const times = getDurationReadTimes(filters.duration);
     if (times.length > 0) q = q.in("read_time", times);
+  }
+  if (filters.follows) {
+    const followFilter = buildFollowOrFilter(filters.follows);
+    // Nothing followed means nothing matches (not "everything")
+    q = followFilter ? q.or(followFilter) : q.eq("id", "00000000-0000-0000-0000-000000000000");
   }
   return q;
 }
@@ -481,6 +521,11 @@ function buildListQuery(filters: BaseFilterOptions) {
   if (filters.duration && filters.duration !== "all") {
     const times = getDurationReadTimes(filters.duration);
     if (times.length > 0) q = q.in("read_time", times);
+  }
+  if (filters.follows) {
+    const followFilter = buildFollowOrFilter(filters.follows);
+    // Nothing followed means nothing matches (not "everything")
+    q = followFilter ? q.or(followFilter) : q.eq("id", "00000000-0000-0000-0000-000000000000");
   }
   return q;
 }
@@ -524,7 +569,13 @@ async function computeSearchPlan(search: string, filters: BaseFilterOptions): Pr
 }
 
 function getSearchPlan(search: string, filters: BaseFilterOptions): Promise<SearchPlan> {
-  const key = JSON.stringify([search.toLowerCase(), filters.companyId, filters.category, filters.duration]);
+  const key = JSON.stringify([
+    search.toLowerCase(),
+    filters.companyId,
+    filters.category,
+    filters.duration,
+    filters.follows ? [...filters.follows.companyIds].sort().concat([...filters.follows.categories].sort()) : null,
+  ]);
   const now = Date.now();
   const cached = planCache.get(key);
   if (cached && cached.expires > now) return cached.plan;
@@ -542,11 +593,11 @@ function getSearchPlan(search: string, filters: BaseFilterOptions): Promise<Sear
 }
 
 export async function getPostCount(options?: PostQueryOptions): Promise<number> {
-  const { companyId, category, searchQuery, duration } = options || {};
+  const { companyId, category, searchQuery, duration, follows } = options || {};
   if (!supabase) {
     return 0;
   }
-  const filters = { companyId, category, duration };
+  const filters = { companyId, category, duration, follows };
 
   try {
     const trimmedSearch = searchQuery?.trim();
@@ -583,11 +634,12 @@ function normalizePosts(data: PostRowWithCompany[]): PostWithCompany[] {
 }
 
 export async function getPosts(options?: PostQueryOptions): Promise<PostWithCompany[]> {
-  const { offset = 0, limit = 40, companyId, category, searchQuery, duration } = options || {};
+  const { offset = 0, limit = 40, companyId, category, searchQuery, duration, follows } =
+    options || {};
   if (!supabase) {
     return [];
   }
-  const filters = { companyId, category, duration };
+  const filters = { companyId, category, duration, follows };
 
   try {
     const trimmedSearch = searchQuery?.trim();

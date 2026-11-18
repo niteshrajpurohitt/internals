@@ -5,6 +5,7 @@ import { Header } from "@/components/header";
 import { SearchProvider } from "@/lib/search-context";
 import { AuthProvider } from "@/lib/auth-context";
 import { BookmarkProvider } from "@/lib/bookmark-context";
+import { FollowProvider } from "@/lib/follow-context";
 import { ThemeProvider } from "@/lib/theme-context";
 import { ToastProvider } from "@/lib/toast-context";
 import { LoginModal } from "@/components/login-modal";
@@ -80,12 +81,14 @@ export default function RootLayout({
           <ToastProvider>
             <AuthProvider>
               <BookmarkProvider>
-                <SearchProvider>
-                  <Header />
-                  <div className="relative z-10 flex flex-1 flex-col">{children}</div>
-                  <LoginModal />
-                  <ToastContainer />
-                </SearchProvider>
+                <FollowProvider>
+                  <SearchProvider>
+                    <Header />
+                    <div className="relative z-10 flex flex-1 flex-col">{children}</div>
+                    <LoginModal />
+                    <ToastContainer />
+                  </SearchProvider>
+                </FollowProvider>
               </BookmarkProvider>
             </AuthProvider>
           </ToastProvider>

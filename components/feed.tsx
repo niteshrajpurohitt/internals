@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { Fragment, useState, useMemo, useEffect, useRef } from "react";
 
 import { ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -9,16 +9,30 @@ import { interleavePostsByCompany } from "@/lib/feed-utils";
 import { useSearch } from "@/lib/search-context";
 import { useAuth } from "@/lib/auth-context";
 import { useBookmarks } from "@/lib/bookmark-context";
+import { useFollows, type FollowTarget } from "@/lib/follow-context";
+import {
+  categoryToSlug,
+  DEFAULT_FEED_FILTERS,
+  isTopicCategory,
+  sameFilters,
+  serverRenderableFilters,
+  writeFeedFiltersToParams,
+  type FeedFilters,
+} from "@/lib/feed-filters";
 import { PostCard } from "./post-card";
+import { FollowButton } from "./follow-button";
 
 interface FeedProps {
   initialPosts: PostWithCompany[];
   companies: Company[];
   totalCount?: number;
+  /** Filters from the page URL. `initialPosts` were fetched with these (minus personal views). */
+  initialFilters?: FeedFilters;
 }
 
 const CATEGORIES: CategoryFilter[] = [
   "All",
+  "Following",
   "Saved",
   "Classics",
   "Postmortems",
@@ -57,19 +71,39 @@ function SavedCounterRoll({ count }: { count: number }) {
   );
 }
 
-export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
+export function Feed({
+  initialPosts,
+  companies,
+  totalCount,
+  initialFilters = DEFAULT_FEED_FILTERS,
+}: FeedProps) {
   const { searchQuery, setSearchQuery } = useSearch();
   const { user, openLoginModal } = useAuth();
   const { bookmarkCount, fetchSavedPosts, bookmarkedPostIds } = useBookmarks();
+  const { followedCompanyIds, followedCategories, followCount, isLoadingFollows } = useFollows();
 
   const [posts, setPosts] = useState<PostWithCompany[]>(initialPosts);
   const [hasMore, setHasMore] = useState(
     totalCount ? initialPosts.length < totalCount : true
   );
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>("All");
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("all");
-  const [selectedDuration, setSelectedDuration] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>(initialFilters.category);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>(initialFilters.companyId);
+  const [selectedDuration, setSelectedDuration] = useState<string>(initialFilters.duration);
+
+  // The filters `initialPosts` were rendered with on the server. When the reader's
+  // filters match these (and there is no search), the server list is reused as-is.
+  const serverFilters = useMemo(() => serverRenderableFilters(initialFilters), [initialFilters]);
+
+  // Comma-joined, sorted follow lists: stable strings for the query URL and effect deps.
+  const followCompaniesParam = useMemo(
+    () => Array.from(followedCompanyIds).sort().join(","),
+    [followedCompanyIds]
+  );
+  const followCategoriesParam = useMemo(
+    () => Array.from(followedCategories).map(categoryToSlug).sort().join(","),
+    [followedCategories]
+  );
   const [isFiltering, setIsFiltering] = useState(false);
   const [filterError, setFilterError] = useState<string | null>(null);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
@@ -89,7 +123,13 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     params.set("offset", offset.toString());
     params.set("limit", limit.toString());
     if (selectedCompanyId !== "all") params.set("companyId", selectedCompanyId);
-    if (selectedCategory !== "All") params.set("category", selectedCategory);
+    if (selectedCategory === "Following") {
+      params.set("following", "1");
+      if (followCompaniesParam) params.set("followCompanies", followCompaniesParam);
+      if (followCategoriesParam) params.set("followCategories", followCategoriesParam);
+    } else if (selectedCategory !== "All" && selectedCategory !== "Saved") {
+      params.set("category", selectedCategory);
+    }
     if (selectedDuration !== "all") params.set("duration", selectedDuration);
     if (searchQuery.trim()) params.set("q", searchQuery.trim());
     return `/api/posts?${params.toString()}`;
@@ -100,8 +140,26 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
       if (!user) return [];
       return posts.filter((p) => bookmarkedPostIds.has(p.id));
     }
+    if (selectedCategory === "Following" && !user) return [];
     return posts;
   }, [selectedCategory, user, posts, bookmarkedPostIds]);
+
+  // Keep the address bar in sync with the shareable filters, so the current view can
+  // be copied, bookmarked or reloaded. replaceState (like the search box) avoids a
+  // navigation and doesn't pile up history entries on every click.
+  useEffect(() => {
+    if (typeof window === "undefined" || window.location.pathname !== "/") return;
+    const url = new URL(window.location.href);
+    const before = url.search;
+    writeFeedFiltersToParams(
+      url.searchParams,
+      { category: selectedCategory, companyId: selectedCompanyId, duration: selectedDuration },
+      companies
+    );
+    if (url.search !== before) {
+      window.history.replaceState(window.history.state, "", url.toString());
+    }
+  }, [selectedCategory, selectedCompanyId, selectedDuration, companies]);
 
   useEffect(() => {
     if (selectedCategory === "Saved") {
@@ -149,13 +207,32 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
       };
     }
 
-    const isDefault =
-      selectedCategory === "All" &&
-      selectedCompanyId === "all" &&
-      selectedDuration === "all" &&
-      !searchQuery.trim();
+    if (selectedCategory === "Following") {
+      // Signed out: displayedPosts is empty and the empty state asks them to sign in.
+      // Still loading follows: wait, so we don't flash "follow something" first.
+      if (!user) {
+        queueMicrotask(() => setIsFiltering(false));
+        return;
+      }
+      if (isLoadingFollows) return;
+      if (followCount === 0) {
+        queueMicrotask(() => {
+          setPosts([]);
+          setHasMore(false);
+          setIsFiltering(false);
+          setFilterError(null);
+        });
+        return;
+      }
+    }
 
-    if (isDefault) {
+    const matchesServerRender =
+      sameFilters(
+        { category: selectedCategory, companyId: selectedCompanyId, duration: selectedDuration },
+        serverFilters
+      ) && !searchQuery.trim();
+
+    if (matchesServerRender) {
       if (posts !== initialPosts) {
         queueMicrotask(() => {
           setPosts(initialPosts);
@@ -202,7 +279,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     }, debounceDelay);
 
     return () => { clearTimeout(timer); abortController.abort(); };
-  }, [selectedCategory, selectedCompanyId, selectedDuration, searchQuery, retryTrigger, initialPosts, totalCount, user, fetchSavedPosts]);
+  }, [selectedCategory, selectedCompanyId, selectedDuration, searchQuery, retryTrigger, initialPosts, totalCount, user, fetchSavedPosts, serverFilters, followCompaniesParam, followCategoriesParam, followCount, isLoadingFollows]);
 
   const loadMorePosts = async () => {
     if (isLoadingMore || !hasMore || isFiltering) return;
@@ -298,6 +375,20 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
     return found ? found.label : "ALL";
   }, [selectedDuration, DURATION_OPTIONS]);
 
+  // Follow toggles, shown right next to the filter they belong to
+  const categoryFollowTarget = useMemo<FollowTarget | null>(
+    () =>
+      isTopicCategory(selectedCategory)
+        ? { kind: "category", category: selectedCategory, label: selectedCategory }
+        : null,
+    [selectedCategory]
+  );
+  const companyFollowTarget = useMemo<FollowTarget | null>(() => {
+    const company =
+      selectedCompanyId !== "all" ? companies.find((c) => c.id === selectedCompanyId) : null;
+    return company ? { kind: "company", companyId: company.id, label: company.name } : null;
+  }, [selectedCompanyId, companies]);
+
   const eligibleCompanies = useMemo(() => {
     return companies.filter((c) => c.post_count === undefined || c.post_count >= 2);
   }, [companies]);
@@ -358,12 +449,12 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
           const isSaved = category === "Saved";
 
           return (
+            <Fragment key={category}>
             <motion.button
-              key={category}
               whileTap={{ scale: 0.98 }}
               transition={{ duration: 0.1 }}
               onClick={() => {
-                if (isSaved && !user) {
+                if ((isSaved || category === "Following") && !user) {
                   openLoginModal();
                 } else {
                   setSelectedCategory(category);
@@ -400,6 +491,10 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
                 )}
               </span>
             </motion.button>
+            {isActive && categoryFollowTarget && (
+              <FollowButton variant="icon" target={categoryFollowTarget} className="-ml-0.5" />
+            )}
+            </Fragment>
           );
         })}
       </div>
@@ -476,6 +571,7 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
                 )}
               </AnimatePresence>
             </div>
+            {companyFollowTarget && <FollowButton variant="icon" target={companyFollowTarget} />}
           </div>
 
           {/* Duration Dropdown */}
@@ -597,7 +693,11 @@ export function Feed({ initialPosts, companies, totalCount }: FeedProps) {
               >
                 {selectedCategory === "Saved"
                   ? "NO SAVED ARTICLES YET"
-                  : "NO ARTICLES MATCH CURRENT FILTERS"}
+                  : selectedCategory === "Following"
+                    ? followCount === 0
+                      ? "FOLLOW A COMPANY OR CATEGORY TO BUILD YOUR FEED"
+                      : "NO ARTICLES FROM WHAT YOU FOLLOW MATCH THESE FILTERS"
+                    : "NO ARTICLES MATCH CURRENT FILTERS"}
               </button>
             </div>
           )}
